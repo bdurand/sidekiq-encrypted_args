@@ -1,16 +1,20 @@
 # Sidekiq Encrypted Args
 
-Support for encrypting arguments for [Sidekiq]|(https://github.com/mperham/sidekiq).
+![Run tests](https://github.com/bdurand/sidekiq-encrypted_args/workflows/Run%20tests/badge.svg)
+[![Maintainability](https://api.codeclimate.com/v1/badges/70ab3782e4d5285eb173/maintainability)](https://codeclimate.com/github/bdurand/sidekiq-encrypted_args/maintainability)
+[![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
+
+Support for encrypting arguments for [Sidekiq](https://github.com/mperham/sidekiq).
 
 ## The Problem
 
-Sidekiq stores the arguments for jobs as JSON in Redis. If your workers include sensitive information (API keys, passwords, personally identifiable information, etc.), then you can accidentally expose this information. The arguments are visible in the Sidekiq web interface and your security will only be as good as your Redis server security.
+Sidekiq stores the arguments for jobs as JSON in Redis. If your workers include sensitive information (API keys, passwords, personally identifiable information, etc.), you run the risk of accidentally exposing this information. Job arguments are visible in the Sidekiq web interface and your security will only be as good as your Redis server security.
 
-This can be an even bigger issue if you use scheduled jobs to enqueue jobs with sensitive data far into the future.
+This can be an even bigger issue if you use scheduled jobs since sensitive data on those jobs will live in Redis until the job is run.
 
 ## The Solution
 
-This gem adds some Sidekiq middleware to support encrypting specified arguments on your workers. Workers can specify `encrypted_args` in the `sidekiq_options` to turn on the encryption functionality. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
+This gem adds Sidekiq middleware to support encrypting specified arguments on your workers. Workers can specify `encrypted_args` in the `sidekiq_options` in the Worker to turn on the encryption functionality. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
 
 To use the gem, you will need to set an encryption key used to encrypt the arguments and add middleware to your Sidekiq client and server middleware stacks.
 
@@ -32,9 +36,9 @@ Sidekiq.configure_server do |config|
 end
 ```
 
-The encryption key will default to the value in the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable.
+However, you can also just call `Sidekiq::EncryptedArgs.configure!` to add the middleware to both Sidkiq middleware stacks.
 
-You can also call `Sidekiq::EncryptedArgs.configure!` to add the middleware to the stacks. The disadvantage of this, however, is that you lose control over where in the stack the middleware is added. In many cases this is fine, but if you have have other middleware that reads teh arguments, you may need to make sure the encryption middlewares appear in a specific spot in the stack. Until the middlewares have been run, the job arguments will be encrypted/decrypted.
+If the secret is not set, it will default to the value in the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable. If this variable is not set, job arguments will not be encrypted.
 
 ## Worker Configuration
 
@@ -63,7 +67,13 @@ You can also specify encrypting just specific arguments with a hash or an array.
 
 ## Rolling Secrets
 
-You can roll your secret key by using an array when setting `Sidekiq::EncryptedArgs.encryption_secret`. The left most key will be considered the current key and will be used for encryption. All of the keys will be tried in order for decrypting. This allows you to switch you secret keys without breaking jobs already enqueued in Redis.
+If you need to roll your secret, you can simply provide an array when setting the secret.
+
+```ruby
+Sidekiq::EncryptedArgs.secret = ["CurrentSecret", "OldSecret"]
+```
+
+The left most key will be considered the current key and will be used for encrypting arguments. However, all of the keys will be tried when decrypting. This allows you to switch you secret keys without breaking jobs already enqueued in Redis.
 
 If you are using the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable to specify your secret, you can specify multiple keys by delimiting them with a space.
 
