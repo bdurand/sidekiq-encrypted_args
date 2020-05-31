@@ -5,3 +5,7 @@ require "standard/rake"
 RSpec::Core::RakeTask.new(:spec)
 
 task default: :spec
+
+task :benchmark do
+  require_relative "benchmark"
+end

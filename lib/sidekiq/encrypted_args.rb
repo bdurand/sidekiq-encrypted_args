@@ -15,7 +15,7 @@ module Sidekiq
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
       # variable. If that value is not set, arguments will not be encypted.
       #
-      # @param [String] keys One or more secrets to use for encypting arguments.
+      # @param [String] value One or more secrets to use for encypting arguments.
       #
       # @note You can set multiple secrets by passing an array if you need to roll your secrets.
       # The left most value in the array will be used as the encryption secret, but
@@ -23,8 +23,8 @@ module Sidekiq
       # jobs that were encypted with a different secret, you can still make it available
       # when decrypting the arguments when the job gets run. If you are using the
       # envrionment variable, separate the keys with spaces.
-      def secret=(*keys)
-        @encryption_secrets = *keys.flatten
+      def secret=(value)
+        @encryptors = make_encryptors(value)
       end
 
       # Calling this method will add the client and server middleware to the Sidekiq
@@ -96,19 +96,16 @@ module Sidekiq
       private_constant :SALT
 
       def encrypt_string(value)
-        secret = encryption_secrets.first
-        return value if secret.nil?
-        encryptor = SecretKeys::Encryptor.from_password(secret, SALT)
+        encryptor = encryptors.first
+        return value if encryptor.nil?
         encryptor.encrypt(value)
       end
 
       def decrypt_string(value)
-        secrets = encryption_secrets
-        return value if secrets.empty?
-        secrets.each do |secret|
+        return value if encryptors == [nil]
+        encryptors.each do |encryptor|
           begin
-            encryptor = SecretKeys::Encryptor.from_password(secret, SALT)
-            return encryptor.decrypt(value)
+            return encryptor.decrypt(value) if encryptor
           rescue OpenSSL::Cipher::CipherError
             # Not the right key, try the next one
           end
@@ -116,11 +113,15 @@ module Sidekiq
         raise InvalidSecretError
       end
 
-      def encryption_secrets
-        unless defined?(@encryption_secrets)
-          @encryption_secrets = ENV["SIDEKIQ_ENCRYPTED_ARGS_SECRET"].to_s.split
+      def encryptors
+        if !defined?(@encryptors) || @encryptors.empty?
+          @encryptors = make_encryptors(ENV["SIDEKIQ_ENCRYPTED_ARGS_SECRET"].to_s.split)
         end
-        @encryption_secrets
+        @encryptors
+      end
+
+      def make_encryptors(secrets)
+        Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
       end
     end
   end
