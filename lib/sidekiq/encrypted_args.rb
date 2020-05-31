@@ -92,6 +92,7 @@ module Sidekiq
 
       private
 
+      # Hard coded salt used sent to the encryptor. Do no change.
       SALT = "3270e054"
       private_constant :SALT
 
