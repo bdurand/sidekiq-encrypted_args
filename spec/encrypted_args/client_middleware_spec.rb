@@ -3,7 +3,6 @@
 require_relative "../spec_helper"
 
 describe Sidekiq::EncryptedArgs::ClientMiddleware do
-
   let(:args) { ["foo", "bar", "baz"] }
   let(:job) { {"args" => args} }
   let(:queue) { "default" }
@@ -57,5 +56,4 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(called).to eq true
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
-
 end

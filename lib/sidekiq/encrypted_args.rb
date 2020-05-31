@@ -6,13 +6,11 @@ require "sidekiq"
 
 module Sidekiq
   module EncryptedArgs
-
-    # Error thrown when the 
+    # Error thrown when the
     class InvalidSecretError < StandardError
     end
 
     class << self
-
       # Set the secret key used for encrypting arguments. If this is not set,
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
       # variable. If that value is not set, arguments will not be encypted.
@@ -108,10 +106,12 @@ module Sidekiq
         secrets = encryption_secrets
         return value if secrets.empty?
         secrets.each do |secret|
-          encryptor = SecretKeys::Encryptor.from_password(secret, SALT)
-          return encryptor.decrypt(value)
-        rescue OpenSSL::Cipher::CipherError
-          # Not the right key, try the next one
+          begin
+            encryptor = SecretKeys::Encryptor.from_password(secret, SALT)
+            return encryptor.decrypt(value)
+          rescue OpenSSL::Cipher::CipherError
+            # Not the right key, try the next one
+          end
         end
         raise InvalidSecretError
       end
@@ -123,7 +123,6 @@ module Sidekiq
         @encryption_secrets
       end
     end
-
   end
 end
 

@@ -3,7 +3,6 @@
 require_relative "spec_helper"
 
 describe Sidekiq::EncryptedArgs do
-
   it "should encrypt and decrypt data" do
     Sidekiq::EncryptedArgs.secret = "key"
     encrypted = Sidekiq::EncryptedArgs.encrypt("foobar")
@@ -14,7 +13,7 @@ describe Sidekiq::EncryptedArgs do
 
   it "should encrypt and decrypt data structures" do
     Sidekiq::EncryptedArgs.secret = "key"
-    data = { "foo" => [1, 2, 3] }
+    data = {"foo" => [1, 2, 3]}
     encrypted = Sidekiq::EncryptedArgs.encrypt(data)
     decrypted = Sidekiq::EncryptedArgs.decrypt(encrypted)
     expect(encrypted).to be_a String
@@ -25,7 +24,7 @@ describe Sidekiq::EncryptedArgs do
     Sidekiq::EncryptedArgs.secret = "key_1"
     encrypted_1 = Sidekiq::EncryptedArgs.encrypt("foobar")
 
-    Sidekiq::EncryptedArgs.secret = %w(key_2 key_1 key_3)
+    Sidekiq::EncryptedArgs.secret = %w[key_2 key_1 key_3]
     encrypted_2 = Sidekiq::EncryptedArgs.encrypt("foobar")
 
     expect(encrypted_2).to_not eq encrypted_1
@@ -86,8 +85,8 @@ describe Sidekiq::EncryptedArgs do
   end
 
   it "should configure the Sidekiq server middleware" do
-     allow(Sidekiq).to receive(:server?).and_return true
-     Sidekiq::EncryptedArgs.configure!
+    allow(Sidekiq).to receive(:server?).and_return true
+    Sidekiq::EncryptedArgs.configure!
     expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
   end
 end

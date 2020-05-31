@@ -15,7 +15,6 @@ class RegularWorker
 
   def perform(arg_1, arg_2, arg_3)
   end
-
 end
 
 class NotSecretWorker
@@ -25,7 +24,6 @@ class NotSecretWorker
 
   def perform(arg_1, arg_2, arg_3)
   end
-
 end
 
 class SecretWorker
@@ -35,17 +33,15 @@ class SecretWorker
 
   def perform(arg_1, arg_2, arg_3)
   end
-
 end
 
 class HashOptionSecretWorker
   include Sidekiq::Worker
 
-  sidekiq_options encrypted_args: { 1 => true }
+  sidekiq_options encrypted_args: {1 => true}
 
   def perform(arg_1, arg_2, arg_3)
   end
-
 end
 
 class ArrayOptionSecretWorker
@@ -55,5 +51,4 @@ class ArrayOptionSecretWorker
 
   def perform(arg_1, arg_2, arg_3)
   end
-
 end

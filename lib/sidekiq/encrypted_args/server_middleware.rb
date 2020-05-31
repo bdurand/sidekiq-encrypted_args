@@ -3,7 +3,6 @@
 module Sidekiq
   module EncryptedArgs
     class ServerMiddleware
-
       # Sidekiq server middleware for encrypting arguments on jobs for workers
       # with `encrypted_args` set in the `sidekiq_options`.
       def call(worker, job, queue)
@@ -19,7 +18,6 @@ module Sidekiq
 
         yield
       end
-
     end
   end
 end
