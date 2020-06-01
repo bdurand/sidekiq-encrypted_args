@@ -1,8 +1,6 @@
 source "https://rubygems.org"
 
-# TODO locking to prerelease version of secret_keys
-# gemspec
-gem "secret_keys", git: "https://github.com/bdurand/secret_keys.git", ref: "80ec5e2"
+gemspec
 
 gem "sidekiq"
 
