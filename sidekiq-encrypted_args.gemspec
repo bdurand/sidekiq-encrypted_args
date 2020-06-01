@@ -1,5 +1,5 @@
 Gem::Specification.new do |spec|
-  spec.name = "secret_keys"
+  spec.name = "sidekiq-encrypted_args"
   spec.version = File.read(File.join(__dir__, "VERSION")).strip
   spec.authors = ["Brian Durand"]
   spec.email = ["bbdurand@gmail.com"]

@@ -130,3 +130,4 @@ end
 
 require_relative "encrypted_args/client_middleware"
 require_relative "encrypted_args/server_middleware"
+require_relative "encrypted_args/version"
