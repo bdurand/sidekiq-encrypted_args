@@ -14,9 +14,9 @@ This can be an even bigger issue if you use scheduled jobs since sensitive data 
 
 ## The Solution
 
-This gem adds Sidekiq middleware that allows you to specify arguments to the `perform` method in your workers that should be encrypted in Redis. You do this by adding `encrypted_args` to the `sidekiq_options` in the worker. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
+This gem adds Sidekiq middleware that allows you to specify job arguments for your workers that should be encrypted in Redis. You do this by adding `encrypted_args` to the `sidekiq_options` in the worker. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
 
-To use the gem, you will need to set an encryption key used to encrypt the arguments and add middleware to your Sidekiq client and server middleware stacks.
+To use the gem, you will need to specify a secret used to encrypt the arguments as well as add the middleware to your Sidekiq client and server middleware stacks.
 
 The full initialization code would look something like this:
 
@@ -36,15 +36,15 @@ Sidekiq.configure_server do |config|
 end
 ```
 
-However, you can also just call `Sidekiq::EncryptedArgs.configure!` to add the middleware to both Sidkiq middleware stacks.
+You can also just call `Sidekiq::EncryptedArgs.configure!` as a shortcut to add the middleware to both Sidkiq middleware stacks.
 
-If the secret is not set, it will default to the value in the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable. If this variable is not set, job arguments will not be encrypted.
-
-You don't need to change anything else about your workers. All of the arguments passed to the `perform` method will already be unencrypted.
+If the secret is not set, it will default to the value in the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable. If this variable is not set, job arguments will not be encrypted.
 
 ## Worker Configuration
 
-To declare that a worker is using encrypted arguments, you must set the `encrypted_args` sidekiq options.
+To declare that a worker is using encrypted arguments, you must set the `encrypted_args` sidekiq option.
+
+Setting the option to `true` will encrypt all the arguments to the `perform` method.
 
 ```ruby
 class SecretWorker
@@ -57,7 +57,7 @@ class SecretWorker
 end
 ```
 
-You can also specify encrypting just specific arguments with a hash or an array. Both of these will encrypt just the second argument to the `perform` method.
+You can also encrypt just specific arguments with a hash or an array. This can be useful to preserve visibility into non-sensitive arguments that might be useful for troubleshooting or other reasons. Both of these examples will encrypt just the second argument to the `perform` method.
 
 ```ruby
   sidekiq_options encrypted_args: [false, true]
@@ -66,6 +66,8 @@ You can also specify encrypting just specific arguments with a hash or an array.
 ```ruby
   sidekiq_options encrypted_args: { 1 => true }
 ```
+
+You don't need to change anything else about your workers. All of the arguments passed to the `perform` method will already be unencrypted when the method is called.
 
 ## Rolling Secrets
 
@@ -77,6 +79,10 @@ Sidekiq::EncryptedArgs.secret = ["CurrentSecret", "OldSecret"]
 
 The left most key will be considered the current key and will be used for encrypting arguments. However, all of the keys will be tried when decrypting. This allows you to switch you secret keys without breaking jobs already enqueued in Redis.
 
-If you are using the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable to specify your secret, you can specify multiple keys by delimiting them with a space.
+If you are using the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable to specify your secret, you can delimit multiple keys with a spaces.
 
-You can also safely add encryption to an existing worker. Any jobs that are already enqueued will still run even without having the arguments encrypted.
+You can also safely add encryption to an existing worker. Any jobs that are already enqueued will still run even without having the arguments encrypted in Redis.
+
+## Encryption
+
+Encrypted arguments are stored using AES-256-GCM with a key derived from your secret using PBKDF2. All security primitives are provided by OpenSSL, based on recommendations put forth in the [libsodium](https://doc.libsodium.org/secret-key_cryptography/aead/aes-256-gcm) crypto suite.
