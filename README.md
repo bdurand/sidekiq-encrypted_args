@@ -85,4 +85,4 @@ You can also safely add encryption to an existing worker. Any jobs that are alre
 
 ## Encryption
 
-Encrypted arguments are stored using AES-256-GCM with a key derived from your secret using PBKDF2. All security primitives are provided by OpenSSL, based on recommendations put forth in the [libsodium](https://doc.libsodium.org/secret-key_cryptography/aead/aes-256-gcm) crypto suite.
+Encrypted arguments are stored using AES-256-GCM with a key derived from your secret using PBKDF2.
