@@ -10,11 +10,11 @@ Support for encrypting arguments for [Sidekiq](https://github.com/mperham/sideki
 
 Sidekiq stores the arguments for jobs as JSON in Redis. If your workers include sensitive information (API keys, passwords, personally identifiable information, etc.), you run the risk of accidentally exposing this information. Job arguments are visible in the Sidekiq web interface and your security will only be as good as your Redis server security.
 
-This can be an even bigger issue if you use scheduled jobs since sensitive data on those jobs will live in Redis until the job is run.
+This can be an even bigger issue if you use scheduled jobs since sensitive data on those jobs will live in Redis until the job is run. Data written to Redis can also be persisted to disk and live on long after the data in Redis has been deleted.
 
 ## The Solution
 
-This gem adds Sidekiq middleware to support encrypting specified arguments on your workers. Workers can specify `encrypted_args` in the `sidekiq_options` in the Worker to turn on the encryption functionality. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
+This gem adds Sidekiq middleware that allows you to specify arguments to the `perform` method in your workers that should be encrypted in Redis. You do this by adding `encrypted_args` to the `sidekiq_options` in the worker. Jobs for these workers will have their arguments encrypted before being stored in Redis and decrypted before the `perform` method is called.
 
 To use the gem, you will need to set an encryption key used to encrypt the arguments and add middleware to your Sidekiq client and server middleware stacks.
 
@@ -39,6 +39,8 @@ end
 However, you can also just call `Sidekiq::EncryptedArgs.configure!` to add the middleware to both Sidkiq middleware stacks.
 
 If the secret is not set, it will default to the value in the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` envrionment variable. If this variable is not set, job arguments will not be encrypted.
+
+You don't need to change anything else about your workers. All of the arguments passed to the `perform` method will already be unencrypted.
 
 ## Worker Configuration
 
