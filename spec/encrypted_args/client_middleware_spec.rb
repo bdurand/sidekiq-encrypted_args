@@ -39,6 +39,33 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [true, true, true]
   end
 
+  it "should support being called with a string class name" do
+    called = false
+    middleware.call("SecretWorker", job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [true, true, true]
+  end
+
+  it "should support scoped class names" do
+    called = false
+    middleware.call("Super::SecretWorker", job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, true]
+  end
+
+  it "should support absolute class names" do
+    called = false
+    middleware.call("::Super::SecretWorker", job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, true]
+  end
+
   it "should only encrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
     called = false
     middleware.call(HashOptionSecretWorker, job, queue) do

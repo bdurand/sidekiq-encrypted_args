@@ -35,6 +35,17 @@ class SecretWorker
   end
 end
 
+module Super
+  class SecretWorker
+    include Sidekiq::Worker
+
+    sidekiq_options encrypted_args: [false, false, true]
+
+    def perform(arg_1, arg_2, arg_3)
+    end
+  end
+end
+
 class ArrayOptionSecretWorker
   include Sidekiq::Worker
 
