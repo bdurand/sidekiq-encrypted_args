@@ -4,7 +4,7 @@ require "standard/rake"
 
 RSpec::Core::RakeTask.new(:spec)
 
-task :default => :appraisals
+task default: :spec
 
 desc "run the specs using appraisal"
 task :appraisals do

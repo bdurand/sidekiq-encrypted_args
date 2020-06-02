@@ -1,7 +1,6 @@
 .tm_properties
-/.bundle/
-/.yardoc
-/Gemfile.lock
+.bundle
+.yardoc
 /_yardoc/
 /coverage/
 /doc/
@@ -9,4 +8,3 @@
 /spec/reports/
 /tmp/
 .DS_Store
-*.gemfile.lock
