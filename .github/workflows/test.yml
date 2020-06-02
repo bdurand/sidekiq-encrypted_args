@@ -45,11 +45,12 @@ jobs:
         run: |
           bundle install --jobs 3 --retry 3
           bundle clean
+          bundle exec rake appraisals:install
       # Okay, back to what we really care about...
       # This is sort of a hack, but it's fine.
       - name: specs
         if:   matrix.job == 'rspec'
-        run:  bundle exec rake spec
+        run:  bundle exec rake appraisals
       - name: standardrb
         if:   matrix.job == 'standardrb'
         run:  bundle exec rake standard

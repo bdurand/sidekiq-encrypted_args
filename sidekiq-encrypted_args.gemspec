@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 2.4"
 
-  spec.add_dependency "sidekiq"
+  spec.add_dependency "sidekiq", ">= 4.0"
   spec.add_dependency "secret_keys"
 
   spec.add_development_dependency "bundler", "~>2.0"
