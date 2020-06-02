@@ -30,7 +30,9 @@ module Sidekiq
       # Calling this method will add the client and server middleware to the Sidekiq
       # middleware chains. If you need to ensure the order of where the middleware is
       # added, you can forgo this method and add it yourself.
-      def configure!
+      def configure!(secret: nil)
+        self.secret = secret unless secret.nil?
+
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
             chain.add Sidekiq::EncryptedArgs::ClientMiddleware
@@ -77,17 +79,25 @@ module Sidekiq
       # Helper method to get the encrypted args option from an options hash. The value of this option
       # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
       # with keys for the argument position and true as the value.
-      def encrypted_args_option(sidekiq_options)
+      def encrypted_args_option(worker_class)
+        sidekiq_options = worker_class.sidekiq_options
         option = sidekiq_options.fetch(:encrypted_args, sidekiq_options["encrypted_args"])
+
         return nil if option.nil?
+
         return Hash.new(true) if option == true
-        return option if option.is_a?(Hash)
-        if option.is_a?(Array)
-          hash = {}
-          option.each_with_index { |val, position| hash[position] = val }
-          return hash
+
+        return replace_argument_positions(worker_class, option) if option.is_a?(Hash)
+
+        hash = {}
+        Array(option).each_with_index do |val, position|
+          if val.is_a?(Symbol) || val.is_a?(String)
+            hash[val] = true
+          else
+            hash[position] = val
+          end
         end
-        nil
+        replace_argument_positions(worker_class, hash)
       end
 
       private
@@ -117,12 +127,29 @@ module Sidekiq
       def encryptors
         if !defined?(@encryptors) || @encryptors.empty?
           @encryptors = make_encryptors(ENV["SIDEKIQ_ENCRYPTED_ARGS_SECRET"].to_s.split)
+          if @encryptors.empty? && Sidekiq.logger
+            Sidekiq.logger.warn("#{self}: Secret not set for encrypting Sidekiq arguments; arguments will not be encrypted.")
+          end
         end
         @encryptors
       end
 
       def make_encryptors(secrets)
         Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
+      end
+
+      def replace_argument_positions(worker_class, encrypt_option)
+        updated = {}
+        encrypt_option.each do |key, value|
+          if key.is_a?(Symbol) || key.is_a?(String)
+            key = key.to_sym
+            position = worker_class.instance_method(:perform).parameters.find_index { |_, name| name == key }
+            updated[position] = value if position
+          elsif key.is_a?(Integer)
+            updated[key] = value
+          end
+        end
+        updated
       end
     end
   end

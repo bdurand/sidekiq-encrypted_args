@@ -48,6 +48,7 @@ describe Sidekiq::EncryptedArgs do
   end
 
   it "should not encrypt if the secret key is not set" do
+    allow(Sidekiq.logger).to receive(:warn).with(instance_of(String))
     Sidekiq::EncryptedArgs.secret = nil
     ClimateControl.modify(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "") do
       expect(Sidekiq::EncryptedArgs.encrypt("foobar")).to eq "foobar"
@@ -80,5 +81,20 @@ describe Sidekiq::EncryptedArgs do
     allow(Sidekiq).to receive(:server?).and_return true
     Sidekiq::EncryptedArgs.configure!
     expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
+  end
+
+  it "should set the secret from the configure! method" do
+    Sidekiq::EncryptedArgs.secret = nil
+    Sidekiq::EncryptedArgs.configure!(secret: "Foo")
+    encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+    expect(encryptors).to_not eq nil
+  end
+
+  it "should not overwrite the secret if it is not provided to the configure! method" do
+    Sidekiq::EncryptedArgs.secret = "Foo"
+    encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+    Sidekiq::EncryptedArgs.configure!
+    expect(encryptors).to_not eq nil
+    expect(encryptors).to eq Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
   end
 end

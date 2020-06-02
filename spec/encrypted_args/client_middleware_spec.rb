@@ -56,4 +56,22 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(called).to eq true
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
+
+  it "should only encrypt arguments whose names are provided in the encrypted_args option array" do
+    called = false
+    middleware.call(NamedArrayOptionSecretWorker, job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
+  end
+
+  it "should only encrypt arguments whose names are set to true in the encrypted_args option hash" do
+    called = false
+    middleware.call(NamedHashOptionSecretWorker, job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
+  end
 end

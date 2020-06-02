@@ -6,7 +6,7 @@ module Sidekiq
     # with `encrypted_args` set in the `sidekiq_options`.
     class ClientMiddleware
       def call(worker_class, job, queue, redis_pool = nil)
-        encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker_class.sidekiq_options)
+        encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker_class)
         if encrypted_args
           new_args = []
           job["args"].each_with_index do |value, position|

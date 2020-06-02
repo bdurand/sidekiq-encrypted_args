@@ -1,8 +1,8 @@
 Gem::Specification.new do |spec|
   spec.name = "sidekiq-encrypted_args"
   spec.version = File.read(File.join(__dir__, "VERSION")).strip
-  spec.authors = ["Brian Durand"]
-  spec.email = ["bbdurand@gmail.com"]
+  spec.authors = ["Brian Durand", "Winston Durand"]
+  spec.email = ["bbdurand@gmail.com", "me@winstondurand.com"]
 
   spec.summary = "Support for encrypting arguments that contain sensitive information in sidekiq jobs."
   spec.homepage = "https://github.com/bdurand/sidekiq-encrypted_args"

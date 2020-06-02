@@ -60,6 +60,26 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     expect(job["args"]).to eq args
   end
 
+  it "should only decrypt arguments whose names are provided in the encrypted_args option array" do
+    called = false
+    job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
+    middleware.call(NamedArrayOptionSecretWorker.new, job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"]).to eq args
+  end
+
+  it "should only decrypt arguments whose names are set to true in the encrypted_args option hash" do
+    called = false
+    job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
+    middleware.call(NamedHashOptionSecretWorker.new, job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["args"]).to eq args
+  end
+
   it "should try multiple keys to decrypt arguments to support rolling keys" do
     called = false
     Sidekiq::EncryptedArgs.secret = "old"

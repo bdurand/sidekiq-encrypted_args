@@ -6,7 +6,7 @@ module Sidekiq
       # Sidekiq server middleware for encrypting arguments on jobs for workers
       # with `encrypted_args` set in the `sidekiq_options`.
       def call(worker, job, queue)
-        encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker.class.sidekiq_options)
+        encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker.class)
         if encrypted_args
           new_args = []
           job["args"].each_with_index do |value, position|
