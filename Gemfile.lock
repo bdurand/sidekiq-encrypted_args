@@ -71,6 +71,7 @@ DEPENDENCIES
   climate_control
   rake
   rspec (~> 3.9)
+  sidekiq (~> 6.0)
   sidekiq-encrypted_args!
   standard (= 0.4.6)
   yard

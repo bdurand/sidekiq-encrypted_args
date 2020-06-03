@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    sidekiq-encrypted_args (1.0.0)
+    sidekiq-encrypted_args (1.0.2)
       secret_keys
       sidekiq (>= 4.0)
 
