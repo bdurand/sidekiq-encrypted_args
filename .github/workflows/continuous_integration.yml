@@ -40,7 +40,9 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: inject sidekiq ${{ matrix.sidekiq }}
         if:   matrix.sidekiq != 'latest' && matrix.job == 'rspec'
-        run:  bundle add sidekiq -v "~> ${{ matrix.sidekiq }}.0"
+        run: |
+          echo "gem 'sidekiq', '~> ${{ matrix.sidekiq }}.0'" >> Gemfile
+          bundle update sidekiq
       - name: install dependencies
         run:  bundle install
       - name: specs
