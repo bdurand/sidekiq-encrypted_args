@@ -27,7 +27,7 @@ jobs:
             sidekiq: 6
         include:
           - ruby: 2.7
-            sidekiq: latest
+            sidekiq: original
             job: rspec
           - ruby: 2.7
             job: standardrb
@@ -39,9 +39,11 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
       - name: inject sidekiq ${{ matrix.sidekiq }}
-        if:   matrix.sidekiq != 'latest' && matrix.job == 'rspec'
+        if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
+        # inject a specific version of sidekiq
         run: |
-          echo "gem 'sidekiq', '~> ${{ matrix.sidekiq }}.0'" >> Gemfile
+          echo '${{ toJSON(matrix) }}'
+          echo 'gem "sidekiq", "~> ${{ matrix.sidekiq }}.0"' >> Gemfile
           bundle update sidekiq
       - name: install dependencies
         run:  bundle install
