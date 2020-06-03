@@ -127,9 +127,6 @@ module Sidekiq
       def encryptors
         if !defined?(@encryptors) || @encryptors.empty?
           @encryptors = make_encryptors(ENV["SIDEKIQ_ENCRYPTED_ARGS_SECRET"].to_s.split)
-          if @encryptors.empty? && Sidekiq.logger
-            Sidekiq.logger.warn("#{self}: Secret not set for encrypting Sidekiq arguments; arguments will not be encrypted.")
-          end
         end
         @encryptors
       end
