@@ -14,7 +14,7 @@ env:
   BUNDLE_RETRY: 3
 jobs:
   specs:
-    name: ${{ matrix.job }} ruby-${{ matrix.ruby }}, sidekiq-${{ matrix.sidekiq }}
+    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.sidekiq && format('sidekiq-{0}', matrix.sidekiq) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -40,9 +40,7 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: inject sidekiq ${{ matrix.sidekiq }}
         if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
-        # inject a specific version of sidekiq
-        run: |
-          echo '${{ toJSON(matrix) }}'
+        run: | # inject a specific version of sidekiq into the Gemfile
           echo 'gem "sidekiq", "~> ${{ matrix.sidekiq }}.0"' >> Gemfile
           bundle update sidekiq
       - name: install dependencies
