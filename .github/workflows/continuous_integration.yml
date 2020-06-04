@@ -9,7 +9,6 @@ on:
   pull_request:
 env:
   BUNDLE_CLEAN: "true"
-  BUNDLE_PATH: vendor/bundle
   BUNDLE_JOBS: 3
   BUNDLE_RETRY: 3
 jobs:
@@ -41,8 +40,8 @@ jobs:
       - name: inject sidekiq ${{ matrix.sidekiq }}
         if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
         run: | # inject a specific version of sidekiq into the Gemfile
-          bundle install
-          bundle exec appraisal generate
+          gem install appraisal
+          appraisal generate
           bundle config set gemfile "gemfiles/sidekiq_${{ matrix.sidekiq }}.gemfile"
       - name: install dependencies
         run:  bundle install
