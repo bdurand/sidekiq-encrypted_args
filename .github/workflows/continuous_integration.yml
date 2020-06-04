@@ -24,16 +24,18 @@ jobs:
           - os: ubuntu-latest
             ruby: 2.6
             job: appraisal
-            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_6.gemfile }
+            bundle: gemfile/sidekiq_6.gemfile
           - os: ubuntu-latest
             ruby: 2.5
             job: appraisal
-            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_5.gemfile }
+            bundle: gemfile/sidekiq_5.gemfile
           - os: ubuntu-latest
             ruby: 2.4
             job: appraisal
-            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_4.gemfile }
+            bundle: gemfile/sidekiq_4.gemfile
     steps:
+      - name: gemfile
+        if: matrix.job == 'appraisal'
       - name: checkout
         uses: actions/checkout@v2
       - name: set up Ruby
@@ -43,8 +45,8 @@ jobs:
       - name: install dependencies
         run: env && bundle install --jobs 3 --retry 3
       - name: specs
-        if:   matrix.job == 'rspec' || matrix.job == 'appraisal'
+        if:   matrix.job != standardrb
         run:  bundle exec rake spec
       - name: standardrb
-        if:   matrix.job == 'standardrb'
+        if:   matrix.job == stanardrb
         run:  bundle exec rake standard
