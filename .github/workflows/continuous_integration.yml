@@ -18,18 +18,14 @@ jobs:
         ruby: [ 2.7 ]
         job: [ rspec ]
         include:
-          - os: ubuntu-latest
-            ruby: 2.7
+          - ruby: 2.7
             job: standardrb
-          - os: ubuntu-latest
-            ruby: 2.6
-            env: BUNDLE_GEMFILE=gemfiles/sidekiq_6.gemfile
-          - os: ubuntu-latest
-            ruby: 2.5
-            env: BUNDLE_GEMFILE=gemfiles/sidekiq_5.gemfile
-          - os: ubuntu-latest
-            ruby: 2.4
-            env: BUNDLE_GEMFILE=gemfiles/sidekiq_4.gemfile
+          - ruby: 2.6
+            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_6.gemfile }
+          - ruby: 2.5
+            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_5.gemfile }
+          - ruby: 2.4
+            env: { BUNDLE_GEMFILE: gemfiles/sidekiq_4.gemfile }
     steps:
       - name: checkout
         uses: actions/checkout@v2
