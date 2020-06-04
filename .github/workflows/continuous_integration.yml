@@ -13,14 +13,6 @@ env:
   BUNDLE_JOBS: 3
   BUNDLE_RETRY: 3
 jobs:
-  appraisals:
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-      - name: set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
   specs:
     name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.sidekiq && format('sidekiq-{0}', matrix.sidekiq) }}
     runs-on: ubuntu-latest
