@@ -46,8 +46,8 @@ jobs:
       - name: install dependencies
         run: env && bundle install --jobs 3 --retry 3
       - name: specs
-        if:   matrix.job != standardrb
+        if:   matrix.job == 'rspec' || matrix.job == 'appraisal'
         run:  bundle exec rake spec
       - name: standardrb
-        if:   matrix.job == stanardrb
+        if:   matrix.job == 'stanardrb'
         run:  bundle exec rake standard
