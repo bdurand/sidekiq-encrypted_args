@@ -9,28 +9,23 @@ on:
   pull_request:
 jobs:
   specs:
-    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.bundle }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
         ruby: [ 2.7 ]
         job: [ rspec ]
         include:
-          - os: ubuntu-latest
             ruby: 2.7
             job: standardrb
-          - os: ubuntu-latest
-            ruby: 2.6
+          - ruby: 2.6
             job: appraisal
             bundle: gemfiles/sidekiq_6.gemfile
-          - os: ubuntu-latest
-            ruby: 2.5
+          - ruby: 2.5
             job: appraisal
             bundle: gemfiles/sidekiq_5.gemfile
-          - os: ubuntu-latest
-            ruby: 2.4
+          - ruby: 2.4
             job: appraisal
             bundle: gemfiles/sidekiq_4.gemfile
     steps:
