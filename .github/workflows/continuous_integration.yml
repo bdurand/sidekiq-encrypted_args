@@ -36,6 +36,7 @@ jobs:
     steps:
       - name: gemfile
         if: matrix.job == 'appraisal'
+        run: echo '::set-env name=BUNDLE_GEMFILE::{{ matrix.bundle }}'
       - name: checkout
         uses: actions/checkout@v2
       - name: set up Ruby
