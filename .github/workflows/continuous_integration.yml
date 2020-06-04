@@ -17,7 +17,7 @@ jobs:
         ruby: [ 2.7 ]
         job: [ rspec ]
         include:
-            ruby: 2.7
+          - ruby: 2.7
             job: standardrb
           - ruby: 2.6
             job: appraisal
