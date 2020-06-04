@@ -41,8 +41,8 @@ jobs:
       - name: inject sidekiq ${{ matrix.sidekiq }}
         if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
         run: | # inject a specific version of sidekiq into the Gemfile
-          gem install appraisal
-          appraisal generate
+          bundle install
+          bundle exec appraisal generate
           bundle config set gemfile "gemfiles/sidekiq_${{ matrix.sidekiq }}.gemfile"
       - name: install dependencies
         run:  bundle install
