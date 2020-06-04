@@ -15,15 +15,21 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-        ruby: [ 2.4, 2.5, 2.6, 2.7 ]
+        ruby: [ 2.7 ]
         job: [ rspec ]
         include:
           - os: ubuntu-latest
             ruby: 2.7
             job: standardrb
           - os: ubuntu-latest
-            ruby: 2.7
-            job: appraisals
+            ruby: 2.6
+            env: BUNDLE_GEMFILE=gemfiles/sidekiq_6.gemfile
+          - os: ubuntu-latest
+            ruby: 2.5
+            env: BUNDLE_GEMFILE=gemfiles/sidekiq_5.gemfile
+          - os: ubuntu-latest
+            ruby: 2.4
+            env: BUNDLE_GEMFILE=gemfiles/sidekiq_4.gemfile
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -35,14 +41,7 @@ jobs:
         run: bundle install --jobs 3 --retry 3
       - name: specs
         if:   matrix.job == 'rspec'
-        run:  |
-          bundle exec rake spec
-      - name: appraisals
-        if:   matrix.job == 'appraisals'
-        run: |
-          bundle exec appraisal
-          bundle exec appraisal update
-          bundle exec rake appraisals
+        run:  bundle exec rake spec
       - name: standardrb
         if:   matrix.job == 'standardrb'
         run:  bundle exec rake standard
