@@ -18,6 +18,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job).to_not include("encrypted_args")
     expect(job["args"]).to eq args
   end
 
@@ -27,6 +28,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array []
     expect(job["args"]).to eq args
   end
 
@@ -36,6 +38,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [0, 1, 2]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [true, true, true]
   end
 
@@ -45,6 +48,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [0, 1, 2]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [true, true, true]
   end
 
@@ -54,6 +58,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [2]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, true]
   end
 
@@ -63,6 +68,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [2]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, true]
   end
 
@@ -72,6 +78,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 
@@ -81,6 +88,17 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
+  end
+
+  it "should only encrypt arguments whose position index is set to true when the encrypted_args option is an array" do
+    called = false
+    middleware.call(ArrayIndexSecretWorker, job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 
@@ -90,6 +108,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 
@@ -99,6 +118,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
       called = true
     end
     expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 end

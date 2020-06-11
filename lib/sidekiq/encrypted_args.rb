@@ -53,7 +53,7 @@ module Sidekiq
       # @return [String]
       def encrypt(data)
         return nil if data.nil?
-        json = JSON.dump(data)
+        json = (data.respond_to?(:to_json) ? data.to_json : JSON.dump(data))
         encrypted = encrypt_string(json)
         if encrypted == json
           data
@@ -79,25 +79,29 @@ module Sidekiq
       # Helper method to get the encrypted args option from an options hash. The value of this option
       # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
       # with keys for the argument position and true as the value.
-      def encrypted_args_option(worker_class)
-        sidekiq_options = worker_class.sidekiq_options
-        option = sidekiq_options.fetch(:encrypted_args, sidekiq_options["encrypted_args"])
-
+      def encrypted_args_option(sidekiq_options, worker_class, args)
+        option = sidekiq_options.fetch("encrypted_args", sidekiq_options[:encrypted_args])
         return nil if option.nil?
+        return [] if option == false
 
-        return Hash.new(true) if option == true
-
-        return replace_argument_positions(worker_class, option) if option.is_a?(Hash)
-
-        hash = {}
-        Array(option).each_with_index do |val, position|
-          if val.is_a?(Symbol) || val.is_a?(String)
-            hash[val] = true
-          else
-            hash[position] = val
+        indexes = []
+        if option == true
+          args.size.times { |i| indexes << i }
+        elsif option.is_a?(Hash)
+          indexes = replace_argument_positions(worker_class, option)
+        else
+          Array(option).each_with_index do |val, position|
+            if val.is_a?(Integer)
+              indexes << val
+            elsif val.is_a?(Symbol) || val.is_a?(String)
+              position = perform_method_parameter_index(worker_class, val)
+              indexes << position if position
+            elsif val
+              indexes << position
+            end
           end
         end
-        replace_argument_positions(worker_class, hash)
+        indexes
       end
 
       private
@@ -135,18 +139,25 @@ module Sidekiq
         Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
       end
 
-      def replace_argument_positions(worker_class, encrypt_option)
-        updated = {}
-        encrypt_option.each do |key, value|
+      def replace_argument_positions(worker_class, encrypt_option_hash)
+        encrypted_indexes = []
+        encrypt_option_hash.each do |key, value|
+          next unless value
           if key.is_a?(Symbol) || key.is_a?(String)
-            key = key.to_sym
-            position = worker_class.instance_method(:perform).parameters.find_index { |_, name| name == key }
-            updated[position] = value if position
+            position = perform_method_parameter_index(worker_class, key)
+            encrypted_indexes << position if position
           elsif key.is_a?(Integer)
-            updated[key] = value
+            encrypted_indexes << key
           end
         end
-        updated
+        encrypted_indexes
+      end
+
+      def perform_method_parameter_index(worker_class, parameter)
+        if worker_class
+          parameter = parameter.to_sym
+          worker_class.instance_method(:perform).parameters.find_index { |_, name| name == parameter }
+        end
       end
     end
   end

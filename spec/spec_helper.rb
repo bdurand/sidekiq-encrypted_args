@@ -55,6 +55,15 @@ class ArrayOptionSecretWorker
   end
 end
 
+class ArrayIndexSecretWorker
+  include Sidekiq::Worker
+
+  sidekiq_options encrypted_args: [1]
+
+  def perform(arg_1, arg_2, arg_3)
+  end
+end
+
 class HashOptionSecretWorker
   include Sidekiq::Worker
 
