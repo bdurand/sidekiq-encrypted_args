@@ -2,12 +2,20 @@
 
 source "https://rubygems.org"
 
-gem "rake"
-gem "rspec", "~> 3.9"
-gem "yard"
-gem "climate_control"
-gem "appraisal"
-gem "standard", "0.4.6"
 gem "sidekiq", "~> 5.0"
 
-gemspec path: "../"
+group :runtime do
+  gemspec path: "../"
+end
+
+group :development, :test do
+  gem "rake"
+  gem "rspec", "~> 3.9"
+  gem "climate_control"
+  gem "appraisal"
+  gem "standard", "0.4.6"
+end
+
+group :doc do
+  gem "yard"
+end
