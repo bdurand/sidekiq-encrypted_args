@@ -72,6 +72,27 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, true]
   end
 
+  it "should just pass through worker classes that it can't instantiate" do
+    called = false
+    middleware.call("UndefinedWorker", job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["encrypted_args"]).to eq nil
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, false, false]
+  end
+
+  it "should honor job encrypted args on worker classes that it can't instantiate" do
+    called = false
+    job["encrypted_args"] = [1]
+    middleware.call("UndefinedWorker", job, queue) do
+      called = true
+    end
+    expect(called).to eq true
+    expect(job["encrypted_args"]).to eq [1]
+    expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
+  end
+
   it "should only encrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
     called = false
     middleware.call(HashOptionSecretWorker, job, queue) do
