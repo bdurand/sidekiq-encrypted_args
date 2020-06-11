@@ -13,16 +13,16 @@ module Sidekiq
     class << self
       # Set the secret key used for encrypting arguments. If this is not set,
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
-      # variable. If that value is not set, arguments will not be encypted.
+      # variable. If that value is not set, arguments will not be encrypted.
       #
-      # @param [String] value One or more secrets to use for encypting arguments.
+      # @param [String] value One or more secrets to use for encrypting arguments.
       #
       # @note You can set multiple secrets by passing an array if you need to roll your secrets.
       # The left most value in the array will be used as the encryption secret, but
       # all the values will be tried when decrypting. That way if you have scheduled
-      # jobs that were encypted with a different secret, you can still make it available
+      # jobs that were encrypted with a different secret, you can still make it available
       # when decrypting the arguments when the job gets run. If you are using the
-      # envrionment variable, separate the keys with spaces.
+      # environment variable, separate the keys with spaces.
       def secret=(value)
         @encryptors = make_encryptors(value)
       end
