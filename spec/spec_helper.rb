@@ -90,3 +90,13 @@ class NamedHashOptionSecretWorker
   def perform(arg_1, arg_2, arg_3)
   end
 end
+
+class ComplexRubyType
+  def initialize(attributes)
+    @attributes = attributes
+  end
+
+  def to_json
+    @attributes.to_json
+  end
+end

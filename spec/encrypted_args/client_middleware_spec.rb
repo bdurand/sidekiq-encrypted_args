@@ -24,6 +24,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should not encrypt arguments if the encrypted_args option is false" do
     called = false
+    job["encrypted_args"] = NotSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(NotSecretWorker, job, queue) do
       called = true
     end
@@ -34,6 +35,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should encrypt all arguments if the encrypted_args option is true" do
     called = false
+    job["encrypted_args"] = SecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(SecretWorker, job, queue) do
       called = true
     end
@@ -95,6 +97,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should only encrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
     called = false
+    job["encrypted_args"] = HashOptionSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(HashOptionSecretWorker, job, queue) do
       called = true
     end
@@ -105,6 +108,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should only encrypt arguments whose position index is set to true when the encrypted_args option is an array" do
     called = false
+    job["encrypted_args"] = ArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(ArrayOptionSecretWorker, job, queue) do
       called = true
     end
@@ -115,6 +119,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should only encrypt arguments whose position index is set to true when the encrypted_args option is an array" do
     called = false
+    job["encrypted_args"] = ArrayIndexSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(ArrayIndexSecretWorker, job, queue) do
       called = true
     end
@@ -125,6 +130,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should only encrypt arguments whose names are provided in the encrypted_args option array" do
     called = false
+    job["encrypted_args"] = NamedArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(NamedArrayOptionSecretWorker, job, queue) do
       called = true
     end
@@ -135,6 +141,7 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
 
   it "should only encrypt arguments whose names are set to true in the encrypted_args option hash" do
     called = false
+    job["encrypted_args"] = NamedHashOptionSecretWorker.sidekiq_options["encrypted_args"]
     middleware.call(NamedHashOptionSecretWorker, job, queue) do
       called = true
     end

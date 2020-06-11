@@ -88,6 +88,14 @@ You can also encrypt just specific arguments with a hash or an array. This can b
   end
 ```
 
+```ruby
+  # Pass in an array of integer values indicating which argument positions should be encrypted
+  sidekiq_options encrypted_args: [1]
+
+  def perform(arg_1, arg_2, arg_3)
+  end
+```
+
 You don't need to change anything else about your workers. All of the arguments passed to the `perform` method will already be unencrypted when the method is called.
 
 ## Rolling Secrets

@@ -56,7 +56,7 @@ module Sidekiq
       # @return [String]
       def encrypt(data)
         return nil if data.nil?
-        json = (data.respond_to?(:to_json) ? data.to_json : JSON.dump(data))
+        json = (data.respond_to?(:to_json) ? data.to_json : JSON.generate(data))
         encrypted = encrypt_string(json)
         if encrypted == json
           data

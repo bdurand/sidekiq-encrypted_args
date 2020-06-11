@@ -20,6 +20,16 @@ describe Sidekiq::EncryptedArgs do
     expect(decrypted).to eq data
   end
 
+  it "should encrypt and decrypt objects that can generate JSON into JSON structures" do
+    Sidekiq::EncryptedArgs.secret = "key"
+    attributes = {"foo" => [1, 2, 3]}
+    data = ComplexRubyType.new(attributes)
+    encrypted = Sidekiq::EncryptedArgs.encrypt(data)
+    decrypted = Sidekiq::EncryptedArgs.decrypt(encrypted)
+    expect(encrypted).to be_a String
+    expect(decrypted).to eq(attributes)
+  end
+
   it "should be able to set mulitiple keys to try for decrypting so a key can be gracefully rolled" do
     Sidekiq::EncryptedArgs.secret = "key_1"
     encrypted_1 = Sidekiq::EncryptedArgs.encrypt("foobar")

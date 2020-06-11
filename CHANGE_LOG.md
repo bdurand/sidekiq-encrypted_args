@@ -1,14 +1,16 @@
-# Change log
+# Change Log
 
 ## unreleased
 
-* Use `to_json` if it is defined when serializing encrypted args to JSON. Fixes bug when non-JSON compatible types are passed as arguments
+* Use `to_json` if it is defined when serializing encrypted args to JSON.
 
-* Add client middleware to server on default configuration so arguments will remain encrypted if a server jobs enqueues a job with encrypted arguments.
+* Add client middleware to the server default configuration. This ensures that arguments will be encrypted if a worker enqueues a job with encrypted arguments.
 
-* Read sidekiq options from job hash and write normalized value from the client middleware so the options on a job will always be in sync with how the job was serialized.
+* Client middleware now reads sidekiq options from the job hash instead of from the worker class so that the list of encrypted arguments is always in sync on the job payload.
 
 * Don't blow up if class name that is not defined is passed to client middleware.
+
+* Added additional option to specify encrypted args with array of argument indexes.
 
 ## 1.0.2
 

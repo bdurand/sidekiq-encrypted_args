@@ -7,17 +7,23 @@ module Sidekiq
     class ClientMiddleware
       # @param [String, Class] worker_class class name or class of worker
       def call(worker_class, job, queue, redis_pool = nil)
+        sidekiq_options = job
+
+        # Worker class can be passed in as a string, in which case the sidekiq options
+        # on the job are the defautl sidekiq options and not the worker specific ones.
         if worker_class.is_a?(String)
           begin
             worker_class = constantize(worker_class)
+            sidekiq_options = worker_class.sidekiq_options
           rescue NameError
             worker_class = nil
           end
         end
 
-        sidekiq_options = (worker_class ? worker_class.sidekiq_options : job)
-        encrypted_args = EncryptedArgs.send(:encrypted_args_option, sidekiq_options, worker_class, job["args"])
-        encrypt_job_arguments!(job, encrypted_args)
+        if sidekiq_options
+          encrypted_args = EncryptedArgs.send(:encrypted_args_option, sidekiq_options, worker_class, job["args"])
+          encrypt_job_arguments!(job, encrypted_args)
+        end
 
         yield
       end
