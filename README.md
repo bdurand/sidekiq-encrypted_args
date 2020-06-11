@@ -39,6 +39,9 @@ Sidekiq.configure_server do |config|
   config.server_middleware do |chain|
     chain.add Sidekiq::EncryptedArgs::ServerMiddleware
   end
+  config.client_middleware do |chain|
+    chain.add Sidekiq::EncryptedArgs::ClientMiddleware
+  end
 end
 ```
 
