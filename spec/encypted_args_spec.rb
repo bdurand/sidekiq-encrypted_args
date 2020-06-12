@@ -30,7 +30,7 @@ describe Sidekiq::EncryptedArgs do
     expect(decrypted).to eq(attributes)
   end
 
-  it "should be able to set mulitiple keys to try for decrypting so a key can be gracefully rolled" do
+  it "should be able to set multiple keys to try for decrypting so a key can be gracefully rolled" do
     Sidekiq::EncryptedArgs.secret = "key_1"
     encrypted_1 = Sidekiq::EncryptedArgs.encrypt("foobar")
 
@@ -81,30 +81,58 @@ describe Sidekiq::EncryptedArgs do
     expect(Sidekiq::EncryptedArgs.decrypt(1)).to eq 1
   end
 
-  it "should configure the Sidekiq client middleware" do
-    allow(Sidekiq).to receive(:server?).and_return false
-    Sidekiq::EncryptedArgs.configure!
-    expect(Sidekiq.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
-  end
+  context "loading middleware" do
+    around(:each) do |example|
+      with_empty_middleware do
+        example.run
+      end
+    end
 
-  it "should configure the Sidekiq server middleware" do
-    allow(Sidekiq).to receive(:server?).and_return true
-    Sidekiq::EncryptedArgs.configure!
-    expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
-  end
+    it "should configure the Sidekiq client middleware" do
+      as_sidekiq_client!
+      Sidekiq::EncryptedArgs.configure!
+      expect(Sidekiq.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
+      expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq false
+    end
 
-  it "should set the secret from the configure! method" do
-    Sidekiq::EncryptedArgs.secret = nil
-    Sidekiq::EncryptedArgs.configure!(secret: "Foo")
-    encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
-    expect(encryptors).to_not eq nil
-  end
+    it "should configure the Sidekiq server middleware" do
+      as_sidekiq_server!
+      Sidekiq::EncryptedArgs.configure!
+      expect(Sidekiq.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
+      expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
+    end
 
-  it "should not overwrite the secret if it is not provided to the configure! method" do
-    Sidekiq::EncryptedArgs.secret = "Foo"
-    encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
-    Sidekiq::EncryptedArgs.configure!
-    expect(encryptors).to_not eq nil
-    expect(encryptors).to eq Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+    it "should set the secret from the configure! method" do
+      Sidekiq::EncryptedArgs.secret = nil
+      Sidekiq::EncryptedArgs.configure!(secret: "Foo")
+      encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+      expect(encryptors).to_not eq nil
+    end
+
+    it "should not overwrite the secret if it is not provided to the configure! method" do
+      Sidekiq::EncryptedArgs.secret = "Foo"
+      encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+      Sidekiq::EncryptedArgs.configure!(secret: nil)
+      expect(encryptors).to_not eq []
+      expect(encryptors).to eq Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+    end
+
+    it "should load client middleware first and server middleware last on server" do
+      as_sidekiq_server!
+      Sidekiq.server_middleware.add(EmptyMiddleware)
+      Sidekiq.client_middleware.add(EmptyMiddleware)
+      Sidekiq::EncryptedArgs.configure!(secret: "0xDEADBEEF")
+
+      expect(Sidekiq.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+      expect(Sidekiq.server_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ServerMiddleware]
+    end
+
+    it "should load client middleware first on client" do
+      as_sidekiq_client!
+      Sidekiq.client_middleware.add(EmptyMiddleware)
+      Sidekiq::EncryptedArgs.configure!(secret: "0xDEADBEEF")
+
+      expect(Sidekiq.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+    end
   end
 end

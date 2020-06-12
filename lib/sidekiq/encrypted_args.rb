@@ -38,7 +38,7 @@ module Sidekiq
 
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
-            chain.add Sidekiq::EncryptedArgs::ClientMiddleware
+            chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
           end
         end
 
@@ -47,7 +47,7 @@ module Sidekiq
             chain.add Sidekiq::EncryptedArgs::ServerMiddleware
           end
           config.client_middleware do |chain|
-            chain.add Sidekiq::EncryptedArgs::ClientMiddleware
+            chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
           end
         end
       end

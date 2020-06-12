@@ -24,6 +24,39 @@ RSpec.configure do |config|
   end
 end
 
+# Reset all middleware for nested context and then restore.
+#
+# @note Middleware args are not preserved
+def with_empty_middleware
+  # Save the middleware context
+  server_middleware = Sidekiq.server_middleware.entries.map(&:klass)
+  client_middleware = Sidekiq.client_middleware.entries.map(&:klass)
+  Sidekiq.server_middleware.clear
+  Sidekiq.client_middleware.clear
+
+  yield
+
+  # Clear anything added and restore all previously registered middleware
+  Sidekiq.server_middleware.clear
+  Sidekiq.client_middleware.clear
+  server_middleware.each { |m| Sidekiq.server_middleware.add(m) }
+  client_middleware.each { |m| Sidekiq.client_middleware.add(m) }
+end
+
+def as_sidekiq_server!
+  allow(Sidekiq).to receive(:server?).and_return true
+end
+
+def as_sidekiq_client!
+  allow(Sidekiq).to receive(:server?).and_return false
+end
+
+class EmptyMiddleware
+  def call(*args)
+    yield
+  end
+end
+
 class RegularWorker
   include Sidekiq::Worker
 
