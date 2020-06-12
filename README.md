@@ -62,27 +62,11 @@ class SecretWorker
 end
 ```
 
-You can also encrypt just specific arguments with a hash or an array. This can be useful to preserve visibility into non-sensitive arguments that might be useful for troubleshooting or other reasons. All of these examples will encrypt just the second argument to the `perform` method.
+You can also encrypt just specific arguments with an array of either argument names or indexes. This can be useful to preserve visibility into non-sensitive arguments that might be useful for troubleshooting or other reasons. Both of these examples will encrypt just the second argument to the `perform` method.
 
 ```ruby
   # Pass in a list of argument names that should be encrypted
   sidekiq_options encrypted_args: [:arg_2]
-
-  def perform(arg_1, arg_2, arg_3)
-  end
-```
-
-```ruby
-  # Pass in a hash with values indicating which arguments should be encrypted
-  sidekiq_options encrypted_args: { arg_2: true, arg_1: false }
-
-  def perform(arg_1, arg_2, arg_3)
-  end
-```
-
-```ruby
-  # Pass in an array of boolean values indicating which argument positions should be encrypted
-  sidekiq_options encrypted_args: [false, true]
 
   def perform(arg_1, arg_2, arg_3)
   end

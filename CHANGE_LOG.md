@@ -1,6 +1,6 @@
 # Change Log
 
-## unreleased
+## 1.1.0
 
 * Use `to_json` if it is defined when serializing encrypted args to JSON.
 
@@ -11,6 +11,8 @@
 * Don't blow up if class name that is not defined is passed to client middleware.
 
 * Added additional option to specify encrypted args with array of argument indexes.
+
+* Deprecated setting encrypted args as hash or array of booleans.
 
 ## 1.0.2
 

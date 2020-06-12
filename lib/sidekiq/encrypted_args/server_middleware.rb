@@ -24,7 +24,7 @@ module Sidekiq
       # definition since gem version 1.0.2 and earlier did not update the encrypted_args on the job.
       def backward_compantible_encrypted_args(encrypted_args, worker_class, job)
         unless encrypted_args.is_a?(Array) && encrypted_args.all? { |position| position.is_a?(Integer) }
-          encrypted_args = EncryptedArgs.send(:encrypted_args_option, encrypted_args, worker_class, job["args"])
+          encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker_class, job)
         end
         encrypted_args
       end

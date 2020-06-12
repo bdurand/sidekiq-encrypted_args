@@ -8,6 +8,20 @@ require_relative "../lib/sidekiq-encrypted_args"
 RSpec.configure do |config|
   config.warnings = true
   config.order = :random
+
+  config.around(:each) do |example|
+    if example.metadata[:no_warn]
+      save_stderr = $stderr
+      begin
+        $stderr = StringIO.new
+        example.run
+      ensure
+        $stderr = save_stderr
+      end
+    else
+      example.run
+    end
+  end
 end
 
 class RegularWorker
@@ -39,19 +53,10 @@ module Super
   class SecretWorker
     include Sidekiq::Worker
 
-    sidekiq_options encrypted_args: [false, false, true]
+    sidekiq_options encrypted_args: "arg_3"
 
     def perform(arg_1, arg_2, arg_3)
     end
-  end
-end
-
-class ArrayOptionSecretWorker
-  include Sidekiq::Worker
-
-  sidekiq_options encrypted_args: [false, true]
-
-  def perform(arg_1, arg_2, arg_3)
   end
 end
 
@@ -68,6 +73,15 @@ class HashOptionSecretWorker
   include Sidekiq::Worker
 
   sidekiq_options encrypted_args: {1 => true}
+
+  def perform(arg_1, arg_2, arg_3)
+  end
+end
+
+class ArrayOptionSecretWorker
+  include Sidekiq::Worker
+
+  sidekiq_options encrypted_args: [false, true]
 
   def perform(arg_1, arg_2, arg_3)
   end

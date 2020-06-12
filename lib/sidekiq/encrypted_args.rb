@@ -77,36 +77,6 @@ module Sidekiq
         JSON.parse(json)
       end
 
-      protected
-
-      # Helper method to get the encrypted args option from an options hash. The value of this option
-      # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
-      # with keys for the argument position and true as the value.
-      def encrypted_args_option(sidekiq_options, worker_class, args)
-        option = sidekiq_options.fetch("encrypted_args", sidekiq_options[:encrypted_args])
-        return nil if option.nil?
-        return [] if option == false
-
-        indexes = []
-        if option == true
-          args.size.times { |i| indexes << i }
-        elsif option.is_a?(Hash)
-          indexes = replace_argument_positions(worker_class, option)
-        else
-          Array(option).each_with_index do |val, position|
-            if val.is_a?(Integer)
-              indexes << val
-            elsif val.is_a?(Symbol) || val.is_a?(String)
-              position = perform_method_parameter_index(worker_class, val)
-              indexes << position if position
-            elsif val
-              indexes << position
-            end
-          end
-        end
-        indexes
-      end
-
       private
 
       # Hard coded password salt used sent to the encryptor. Do no change.
@@ -140,6 +110,63 @@ module Sidekiq
 
       def make_encryptors(secrets)
         Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
+      end
+
+      def deprecation_warning(message)
+        warn("Sidekiq::EncryptedArgs: setting encrypted_args to #{message} is deprecated; support will be removed in version 1.2.")
+      end
+
+      # Helper method to get the encrypted args option from an options hash. The value of this option
+      # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
+      # with keys for the argument position and true as the value.
+      def encrypted_args_option(worker_class, job)
+        option = job["encrypted_args"]
+        return nil if option.nil?
+        return [] if option == false
+
+        indexes = []
+        if option == true
+          job["args"].size.times { |i| indexes << i }
+        elsif option.is_a?(Hash)
+          deprecation_warning("hash")
+          indexes = replace_argument_positions(worker_class, option)
+        else
+          array_type = nil
+          deprecation_message = nil
+          Array(option).each_with_index do |val, position|
+            current_type = nil
+            if val.is_a?(Integer)
+              indexes << val
+              current_type = :integer
+            elsif val.is_a?(Symbol) || val.is_a?(String)
+              worker_class = constantize(worker_class) if worker_class.is_a?(String)
+              position = perform_method_parameter_index(worker_class, val)
+              indexes << position if position
+              current_type = :symbol
+            else
+              deprecation_message = "boolean array"
+              indexes << position if val
+            end
+            if array_type && current_type
+              deprecation_message = "array of mixed types"
+            else
+              array_type ||= current_type
+            end
+          end
+          deprecation_warning(deprecation_message) if deprecation_message
+        end
+        indexes
+      end
+
+      # @param [String] class_name name of a class
+      # @return [Class] class that was referenced by name
+      def constantize(class_name)
+        names = class_name.split("::")
+        # Clear leading :: for root namespace since we're already calling from object
+        names.shift if names.empty? || names.first.empty?
+        # Map reduce to the constant. Use inherit=false to not accidentally search
+        # parent modules
+        names.inject(Object) { |constant, name| constant.const_get(name, false) }
       end
 
       def replace_argument_positions(worker_class, encrypt_option_hash)

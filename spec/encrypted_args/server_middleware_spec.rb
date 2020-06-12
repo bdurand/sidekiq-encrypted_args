@@ -68,10 +68,10 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     expect(job["args"]).to eq args
   end
 
-  context "when encrypted_args is set but not normalized to an array of argument positions" do
+  context "when encrypted_args is set but not normalized to an array of argument positions", :no_warn do
     it "should not decrypt arguments if the encrypted_args option is false" do
       called = false
-      job["encrypted_args"] = NotSecretWorker.sidekiq_options
+      job["encrypted_args"] = NotSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(NotSecretWorker.new, job, queue) do
         called = true
       end
@@ -82,7 +82,7 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     it "should decrypt all arguments if the encrypted_args option is true" do
       called = false
       job["args"] = args.collect { |arg| Sidekiq::EncryptedArgs.encrypt(arg) }
-      job["encrypted_args"] = SecretWorker.sidekiq_options
+      job["encrypted_args"] = SecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(SecretWorker.new, job, queue) do
         called = true
       end
@@ -93,7 +93,7 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     it "should only decrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
       called = false
       job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = HashOptionSecretWorker.sidekiq_options
+      job["encrypted_args"] = HashOptionSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(HashOptionSecretWorker.new, job, queue) do
         called = true
       end
@@ -104,7 +104,7 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     it "should only decrypt arguments whose position index is set to true when the encrypted_args option is an array" do
       called = false
       job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = ArrayOptionSecretWorker.sidekiq_options
+      job["encrypted_args"] = ArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(ArrayOptionSecretWorker.new, job, queue) do
         called = true
       end
@@ -115,7 +115,7 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     it "should only decrypt arguments whose names are provided in the encrypted_args option array" do
       called = false
       job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = NamedArrayOptionSecretWorker.sidekiq_options
+      job["encrypted_args"] = NamedArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(NamedArrayOptionSecretWorker.new, job, queue) do
         called = true
       end
@@ -126,7 +126,7 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
     it "should only decrypt arguments whose names are set to true in the encrypted_args option hash" do
       called = false
       job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = NamedHashOptionSecretWorker.sidekiq_options
+      job["encrypted_args"] = NamedHashOptionSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(NamedHashOptionSecretWorker.new, job, queue) do
         called = true
       end
