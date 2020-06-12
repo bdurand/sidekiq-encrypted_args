@@ -1,5 +1,6 @@
 .tm_properties
 .bundle
+/gemfiles/*.lock
 .yardoc
 /_yardoc/
 /coverage/

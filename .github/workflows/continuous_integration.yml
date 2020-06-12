@@ -7,23 +7,30 @@ on:
     tags:
       - v*
   pull_request:
+env:
+  BUNDLE_CLEAN: "true"
+  BUNDLE_PATH: vendor/bundle
+  BUNDLE_JOBS: 3
+  BUNDLE_RETRY: 3
 jobs:
   specs:
-    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.sidekiq && format('sidekiq-{0}', matrix.sidekiq) }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
         ruby: [ 2.4, 2.5, 2.6, 2.7 ]
+        sidekiq: [4, 5, 6]
         job: [ rspec ]
+        exclude:
+          - ruby: 2.4
+            sidekiq: 6
         include:
-          - os: ubuntu-latest
-            ruby: 2.7
+          - ruby: 2.7
+            sidekiq: original
+            job: rspec
+          - ruby: 2.7
             job: standardrb
-          - os: ubuntu-latest
-            ruby: 2.7
-            job: appraisals
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -31,18 +38,17 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: inject sidekiq ${{ matrix.sidekiq }}
+        if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
+        run: | # inject a specific version of sidekiq into the Gemfile
+          bundle update
+          bundle exec appraisal generate
+          bundle config set gemfile "gemfiles/sidekiq_${{ matrix.sidekiq }}.gemfile"
       - name: install dependencies
-        run: bundle install --jobs 3 --retry 3
+        run:  bundle install
       - name: specs
         if:   matrix.job == 'rspec'
-        run:  |
-          bundle exec rake spec
-      - name: appraisals
-        if:   matrix.job == 'appraisals'
-        run: |
-          bundle exec appraisal
-          bundle exec appraisal update
-          bundle exec rake appraisals
+        run:  bundle exec rake spec
       - name: standardrb
         if:   matrix.job == 'standardrb'
         run:  bundle exec rake standard
