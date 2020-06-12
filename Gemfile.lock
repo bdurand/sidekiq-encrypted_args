@@ -1,18 +1,18 @@
 PATH
   remote: .
   specs:
-    sidekiq-encrypted_args (1.0.2)
+    sidekiq-encrypted_args (1.1.0)
       secret_keys
       sidekiq (>= 4.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    appraisal (2.2.0)
+    appraisal (2.3.0)
       bundler
       rake
       thor (>= 0.14.0)
-    ast (2.4.0)
+    ast (2.4.1)
     climate_control (0.2.0)
     connection_pool (2.2.3)
     diff-lcs (1.3)
@@ -24,7 +24,7 @@ GEM
       rack
     rainbow (3.0.0)
     rake (13.0.1)
-    redis (4.1.4)
+    redis (4.2.1)
     rexml (3.2.4)
     rspec (3.9.0)
       rspec-core (~> 3.9.0)

@@ -6,8 +6,11 @@ require "sidekiq"
 
 module Sidekiq
   module EncryptedArgs
-    # Error thrown when the
+    # Error thrown when the secret is invalid
     class InvalidSecretError < StandardError
+      def initialize
+        super("Cannot decrypt. Invalid secret provided.")
+      end
     end
 
     class << self
@@ -51,7 +54,7 @@ module Sidekiq
 
       # Encrypt a value.
       #
-      # @param [Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
+      # @param [#to_json, Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
       #
       # @return [String]
       def encrypt(data)
@@ -70,7 +73,7 @@ module Sidekiq
       # @param [String] encrypted_data Data that was previously encrypted. If the value passed in is
       # an unencrypted string, then the string itself will be returned.
       #
-      # @return [String]
+      # @return [Object]
       def decrypt(encrypted_data)
         return encrypted_data unless SecretKeys::Encryptor.encrypted?(encrypted_data)
         json = decrypt_string(encrypted_data)
