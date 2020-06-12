@@ -19,7 +19,7 @@ module Sidekiq
 
       # Encrypt the arguments on job
       #
-      # Additionally, set `job["encrypted_args"` to the canonicalized version (i.e. `Array<Integer>`)
+      # Additionally, set `job["encrypted_args"]` to the canonicalized version (i.e. `Array<Integer>`)
       #
       # @param [Hash]
       # @param [Array<Integer>] encrypted_args array of indexes in job to encrypt

@@ -18,21 +18,26 @@ module Sidekiq
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
       # variable. If that value is not set, arguments will not be encrypted.
       #
-      # @param [String] value One or more secrets to use for encrypting arguments.
-      #
-      # @note You can set multiple secrets by passing an array if you need to roll your secrets.
+      # You can set multiple secrets by passing an array if you need to roll your secrets.
       # The left most value in the array will be used as the encryption secret, but
       # all the values will be tried when decrypting. That way if you have scheduled
       # jobs that were encrypted with a different secret, you can still make it available
       # when decrypting the arguments when the job gets run. If you are using the
       # environment variable, separate the keys with spaces.
+      #
+      # @param [String] value One or more secrets to use for encrypting arguments.
+      # @return [void]
       def secret=(value)
         @encryptors = make_encryptors(value)
       end
 
-      # Calling this method will add the client and server middleware to the Sidekiq
+      # Add the client and server middleware to the Sidekiq
       # middleware chains. If you need to ensure the order of where the middleware is
       # added, you can forgo this method and add it yourself.
+      #
+      # This method prepends client middleware and appends server middleware.
+      #
+      # @param [String] secret optionally set the secret here. See {.secret=}
       def configure!(secret: nil)
         self.secret = secret unless secret.nil?
 

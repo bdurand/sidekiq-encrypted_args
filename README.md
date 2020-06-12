@@ -14,7 +14,7 @@ This can be an even bigger issue if you use scheduled jobs since sensitive data 
 
 ## Solution
 
-This gem adds Sidekiq middleware that allows you to specify job arguments for your workers that should be encrypted in Redis. You do this by adding `encrypted_args` to the `sidekiq_options` in the worker. Jobs for these workers will have their arguments encrypted in Redis and decrypted when passed to `perform` method.
+This gem adds Sidekiq middleware that allows you to specify job arguments for your workers that should be encrypted in Redis. You do this by adding `encrypted_args` to the `sidekiq_options` in the worker. Jobs for these workers will have their arguments encrypted in Redis and decrypted when passed to the `perform` method.
 
 To use the gem, you will need to specify a secret that will be used to encrypt the arguments as well as add the middleware to your Sidekiq client and server middleware stacks. You can set that up by adding this to the end of your Sidekiq initialization:
 
@@ -24,7 +24,9 @@ Sidekiq::EncryptedArgs.configure!(secret: "YourSecretKey")
 
 If the secret is not set, the value of the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable will be used as the secret. If this variable is not set, job arguments will not be encrypted.
 
-The call to `Sidekiq::EncryptedArgs.configure!` will append the encryption middleware to the end of the client and server middleware chains. You can add the middlewares manually if you need more control over where they appear in the stacks.
+The call to `Sidekiq::EncryptedArgs.configure!` will **prepend** the client encryption middleware and **append** server decryption middleware. By doing this, any other middleware you register will only receive the encrypted parameters (e.g. logging middleware will receive the encrypted parameters).
+
+You can add the middleware manually if you need more control over where they appear in the stacks.
 
 ```ruby
 Sidekiq::EncryptedArgs.secret = "YourSecretKey"
