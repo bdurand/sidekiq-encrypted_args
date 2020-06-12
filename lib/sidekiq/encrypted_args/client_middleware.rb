@@ -8,7 +8,7 @@ module Sidekiq
       # @param [String, Class] worker_class class name or class of worker
       def call(worker_class, job, queue, redis_pool = nil)
         if job.include?("encrypted_args")
-          encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker_class, job)
+          encrypted_args = EncryptedArgs.encrypted_args_option(worker_class, job)
           encrypt_job_arguments!(job, encrypted_args)
         end
 
@@ -17,12 +17,18 @@ module Sidekiq
 
       private
 
+      # Encrypt the arguments on job
+      #
+      # Additionally, set `job["encrypted_args"` to the canonicalized version (i.e. `Array<Integer>`)
+      #
+      # @param [Hash]
+      # @param [Array<Integer>] encrypted_args array of indexes in job to encrypt
+      # @return [void]
       def encrypt_job_arguments!(job, encrypted_args)
         if encrypted_args
           job_args = job["args"]
-          job_args.size.times do |position|
+          job_args.each_with_index do |value, position|
             if encrypted_args.include?(position)
-              value = job_args[position]
               job_args[position] = EncryptedArgs.encrypt(value)
             end
           end
