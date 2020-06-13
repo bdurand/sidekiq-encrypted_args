@@ -1,6 +1,6 @@
 # Sidekiq Encrypted Args
 
-![Continuous Integration](https://github.com/bdurand/sidekiq-encrypted_args/workflows/Continuous%20Integration/badge.svg?branch=master)
+[![Continuous Integration](https://github.com/bdurand/sidekiq-encrypted_args/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/bdurand/sidekiq-encrypted_args/actions?query=workflow%3A%22Continuous+Integration%22)
 [![Maintainability](https://api.codeclimate.com/v1/badges/70ab3782e4d5285eb173/maintainability)](https://codeclimate.com/github/bdurand/sidekiq-encrypted_args/maintainability)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
 
