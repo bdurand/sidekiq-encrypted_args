@@ -6,8 +6,11 @@ require "sidekiq"
 
 module Sidekiq
   module EncryptedArgs
-    # Error thrown when the
+    # Error thrown when the secret is invalid
     class InvalidSecretError < StandardError
+      def initialize
+        super("Cannot decrypt. Invalid secret provided.")
+      end
     end
 
     class << self
@@ -15,27 +18,32 @@ module Sidekiq
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
       # variable. If that value is not set, arguments will not be encrypted.
       #
-      # @param [String] value One or more secrets to use for encrypting arguments.
-      #
-      # @note You can set multiple secrets by passing an array if you need to roll your secrets.
+      # You can set multiple secrets by passing an array if you need to roll your secrets.
       # The left most value in the array will be used as the encryption secret, but
       # all the values will be tried when decrypting. That way if you have scheduled
       # jobs that were encrypted with a different secret, you can still make it available
       # when decrypting the arguments when the job gets run. If you are using the
       # environment variable, separate the keys with spaces.
+      #
+      # @param [String] value One or more secrets to use for encrypting arguments.
+      # @return [void]
       def secret=(value)
         @encryptors = make_encryptors(value)
       end
 
-      # Calling this method will add the client and server middleware to the Sidekiq
+      # Add the client and server middleware to the Sidekiq
       # middleware chains. If you need to ensure the order of where the middleware is
       # added, you can forgo this method and add it yourself.
+      #
+      # This method prepends client middleware and appends server middleware.
+      #
+      # @param [String] secret optionally set the secret here. See {.secret=}
       def configure!(secret: nil)
         self.secret = secret unless secret.nil?
 
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
-            chain.add Sidekiq::EncryptedArgs::ClientMiddleware
+            chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
           end
         end
 
@@ -43,17 +51,20 @@ module Sidekiq
           config.server_middleware do |chain|
             chain.add Sidekiq::EncryptedArgs::ServerMiddleware
           end
+          config.client_middleware do |chain|
+            chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
+          end
         end
       end
 
       # Encrypt a value.
       #
-      # @param [Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
+      # @param [#to_json, Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
       #
       # @return [String]
       def encrypt(data)
         return nil if data.nil?
-        json = JSON.dump(data)
+        json = (data.respond_to?(:to_json) ? data.to_json : JSON.generate(data))
         encrypted = encrypt_string(json)
         if encrypted == json
           data
@@ -67,37 +78,55 @@ module Sidekiq
       # @param [String] encrypted_data Data that was previously encrypted. If the value passed in is
       # an unencrypted string, then the string itself will be returned.
       #
-      # @return [String]
+      # @return [Object]
       def decrypt(encrypted_data)
         return encrypted_data unless SecretKeys::Encryptor.encrypted?(encrypted_data)
         json = decrypt_string(encrypted_data)
         JSON.parse(json)
       end
 
-      protected
-
-      # Helper method to get the encrypted args option from an options hash. The value of this option
+      # Private helper method to get the encrypted args option from an options hash. The value of this option
       # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
       # with keys for the argument position and true as the value.
-      def encrypted_args_option(worker_class)
-        sidekiq_options = worker_class.sidekiq_options
-        option = sidekiq_options.fetch(:encrypted_args, sidekiq_options["encrypted_args"])
-
+      #
+      # @private
+      def encrypted_args_option(worker_class, job)
+        option = job["encrypted_args"]
         return nil if option.nil?
+        return [] if option == false
 
-        return Hash.new(true) if option == true
-
-        return replace_argument_positions(worker_class, option) if option.is_a?(Hash)
-
-        hash = {}
-        Array(option).each_with_index do |val, position|
-          if val.is_a?(Symbol) || val.is_a?(String)
-            hash[val] = true
-          else
-            hash[position] = val
+        indexes = []
+        if option == true
+          job["args"].size.times { |i| indexes << i }
+        elsif option.is_a?(Hash)
+          deprecation_warning("hash")
+          indexes = replace_argument_positions(worker_class, option)
+        else
+          array_type = nil
+          deprecation_message = nil
+          Array(option).each_with_index do |val, position|
+            current_type = nil
+            if val.is_a?(Integer)
+              indexes << val
+              current_type = :integer
+            elsif val.is_a?(Symbol) || val.is_a?(String)
+              worker_class = constantize(worker_class) if worker_class.is_a?(String)
+              position = perform_method_parameter_index(worker_class, val)
+              indexes << position if position
+              current_type = :symbol
+            else
+              deprecation_message = "boolean array"
+              indexes << position if val
+            end
+            if array_type && current_type
+              deprecation_message = "array of mixed types"
+            else
+              array_type ||= current_type
+            end
           end
+          deprecation_warning(deprecation_message) if deprecation_message
         end
-        replace_argument_positions(worker_class, hash)
+        indexes
       end
 
       private
@@ -135,18 +164,40 @@ module Sidekiq
         Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
       end
 
-      def replace_argument_positions(worker_class, encrypt_option)
-        updated = {}
-        encrypt_option.each do |key, value|
+      def deprecation_warning(message)
+        warn("Sidekiq::EncryptedArgs: setting encrypted_args to #{message} is deprecated; support will be removed in version 1.2.")
+      end
+
+      # @param [String] class_name name of a class
+      # @return [Class] class that was referenced by name
+      def constantize(class_name)
+        names = class_name.split("::")
+        # Clear leading :: for root namespace since we're already calling from object
+        names.shift if names.empty? || names.first.empty?
+        # Map reduce to the constant. Use inherit=false to not accidentally search
+        # parent modules
+        names.inject(Object) { |constant, name| constant.const_get(name, false) }
+      end
+
+      def replace_argument_positions(worker_class, encrypt_option_hash)
+        encrypted_indexes = []
+        encrypt_option_hash.each do |key, value|
+          next unless value
           if key.is_a?(Symbol) || key.is_a?(String)
-            key = key.to_sym
-            position = worker_class.instance_method(:perform).parameters.find_index { |_, name| name == key }
-            updated[position] = value if position
+            position = perform_method_parameter_index(worker_class, key)
+            encrypted_indexes << position if position
           elsif key.is_a?(Integer)
-            updated[key] = value
+            encrypted_indexes << key
           end
         end
-        updated
+        encrypted_indexes
+      end
+
+      def perform_method_parameter_index(worker_class, parameter)
+        if worker_class
+          parameter = parameter.to_sym
+          worker_class.instance_method(:perform).parameters.find_index { |_, name| name == parameter }
+        end
       end
     end
   end

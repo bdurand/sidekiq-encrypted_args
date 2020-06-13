@@ -5,17 +5,11 @@ module Sidekiq
     # Sidekiq client middleware for encrypting arguments on jobs for workers
     # with `encrypted_args` set in the `sidekiq_options`.
     class ClientMiddleware
-      # @param [String, Class] worker_class class name or class of worker
+      # Encrypt specified arguments before they're sent off to the queue
       def call(worker_class, job, queue, redis_pool = nil)
-        worker_class = constantize(worker_class) if worker_class.is_a?(String)
-        encrypted_args = EncryptedArgs.send(:encrypted_args_option, worker_class)
-        if encrypted_args
-          new_args = []
-          job["args"].each_with_index do |value, position|
-            value = EncryptedArgs.encrypt(value) if encrypted_args[position]
-            new_args << value
-          end
-          job["args"] = new_args
+        if job.include?("encrypted_args")
+          encrypted_args = EncryptedArgs.encrypted_args_option(worker_class, job)
+          encrypt_job_arguments!(job, encrypted_args)
         end
 
         yield
@@ -23,15 +17,25 @@ module Sidekiq
 
       private
 
-      # @param [String] class_name name of a class
-      # @return [Class] class that was referenced by name
-      def constantize(class_name)
-        names = class_name.split("::")
-        # Clear leading :: for root namespace since we're already calling from object
-        names.shift if names.empty? || names.first.empty?
-        # Map reduce to the constant. Use inherit=false to not accidentally search
-        # parent modules
-        names.inject(Object) { |constant, name| constant.const_get(name, false) }
+      # Encrypt the arguments on job
+      #
+      # Additionally, set `job["encrypted_args"]` to the canonicalized version (i.e. `Array<Integer>`)
+      #
+      # @param [Hash]
+      # @param [Array<Integer>] encrypted_args array of indexes in job to encrypt
+      # @return [void]
+      def encrypt_job_arguments!(job, encrypted_args)
+        if encrypted_args
+          job_args = job["args"]
+          job_args.each_with_index do |value, position|
+            if encrypted_args.include?(position)
+              job_args[position] = EncryptedArgs.encrypt(value)
+            end
+          end
+          job["encrypted_args"] = encrypted_args
+        else
+          job.delete("encrypted_args")
+        end
       end
     end
   end
