@@ -33,6 +33,7 @@ def with_environment(env)
     save_vals.each { |k, v| ENV[k.to_s] = v }
   end
 end
+
 # Reset all middleware for nested context and then restore.
 #
 # @note Middleware args are not preserved
