@@ -1,7 +1,6 @@
 # Sidekiq Encrypted Args
 
 [![Continuous Integration](https://github.com/bdurand/sidekiq-encrypted_args/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/bdurand/sidekiq-encrypted_args/actions?query=workflow%3A%22Continuous+Integration%22)
-[![Maintainability](https://api.codeclimate.com/v1/badges/70ab3782e4d5285eb173/maintainability)](https://codeclimate.com/github/bdurand/sidekiq-encrypted_args/maintainability)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
 
 Support for encrypting arguments for [Sidekiq](https://github.com/mperham/sidekiq).
@@ -106,3 +105,31 @@ You can also safely add encryption to an existing worker. Any jobs that are alre
 ## Encryption
 
 Encrypted arguments are stored using AES-256-GCM with a key derived from your secret using PBKDF2. For more info on the underlying encryption, refer to the [SecretKeys](https://github.com/bdurand/secret_keys) gem.
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem "sidekiq-encrypted_args"
+```
+
+And then execute:
+```bash
+$ bundle
+```
+
+Or install it yourself as:
+```bash
+$ gem install sidekiq-encrypted_args
+```
+
+## Contributing
+
+Open a pull request on GitHub.
+
+Please use the [standardrb](https://github.com/testdouble/standard) syntax and lint your code with `standardrb --fix` before submitting.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

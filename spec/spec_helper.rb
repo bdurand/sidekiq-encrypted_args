@@ -1,7 +1,6 @@
 require "bundler/setup"
 
 require "sidekiq"
-require "climate_control"
 
 require_relative "../lib/sidekiq-encrypted_args"
 
@@ -24,6 +23,16 @@ RSpec.configure do |config|
   end
 end
 
+# Helper method to temporarily set environment variables.
+def with_environment(env)
+  save_vals = env.keys.collect { |k| [k, ENV[k.to_s]] }
+  begin
+    env.each { |k, v| ENV[k.to_s] = v }
+    yield
+  ensure
+    save_vals.each { |k, v| ENV[k.to_s] = v }
+  end
+end
 # Reset all middleware for nested context and then restore.
 #
 # @note Middleware args are not preserved

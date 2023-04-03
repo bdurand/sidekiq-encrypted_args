@@ -7,7 +7,6 @@ end
 group :development, :test do
   gem "rake"
   gem "rspec", "~> 3.9"
-  gem "climate_control"
   gem "appraisal"
 
   # Lock standard to a particular version, esp. cause it's still 0.x.x according to Semver

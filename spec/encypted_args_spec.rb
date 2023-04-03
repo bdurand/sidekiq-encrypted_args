@@ -44,7 +44,7 @@ describe Sidekiq::EncryptedArgs do
 
   it "should read the secret key from the environment if it has not been explicitly set" do
     Sidekiq::EncryptedArgs.secret = nil
-    ClimateControl.modify(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "env_key") do
+    with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "env_key") do
       env_encrypted = Sidekiq::EncryptedArgs.encrypt("foobar")
       env_decrypted = Sidekiq::EncryptedArgs.decrypt(env_encrypted)
       expect(env_decrypted).to eq "foobar"
@@ -60,7 +60,7 @@ describe Sidekiq::EncryptedArgs do
   it "should not encrypt if the secret key is not set" do
     allow(Sidekiq.logger).to receive(:warn).with(instance_of(String))
     Sidekiq::EncryptedArgs.secret = nil
-    ClimateControl.modify(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "") do
+    with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "") do
       expect(Sidekiq::EncryptedArgs.encrypt("foobar")).to eq "foobar"
     end
   end
