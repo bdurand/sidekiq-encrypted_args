@@ -11,7 +11,7 @@ group :development, :test do
   gem "appraisal"
 
   # Lock standard to a particular version, esp. cause it's still 0.x.x according to Semver
-  gem "standard", "0.4.6"
+  gem "standard", "~> 1.0"
 end
 
 group :doc do

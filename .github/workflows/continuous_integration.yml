@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - actions-*
     tags:
       - v*
   pull_request:
@@ -14,41 +13,45 @@ env:
   BUNDLE_RETRY: 3
 jobs:
   specs:
-    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.sidekiq && format('sidekiq-{0}', matrix.sidekiq) }}
+    name: ruby-${{ matrix.ruby }} ${{ matrix.appraisal }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ 2.4, 2.5, 2.6, 2.7 ]
-        sidekiq: [4, 5, 6]
-        job: [ rspec ]
-        exclude:
-          - ruby: 2.4
-            sidekiq: 6
         include:
-          - ruby: 2.7
-            sidekiq: original
-            job: rspec
-          - ruby: 2.7
-            job: standardrb
+          - ruby: "ruby"
+            standardrb: true
+            coverage: true
+          - ruby: "3.1"
+            appraisal: "sidekiq_7"
+          - ruby: "3.0"
+            appraisal: "sidekiq_6"
+          - ruby: "2.7"
+            appraisal: "sidekiq_5"
+          - ruby: "2.4"
+            appraisal: "sidekiq_4"
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-      - name: set up Ruby
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Ruby ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: inject sidekiq ${{ matrix.sidekiq }}
-        if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
-        run: | # inject a specific version of sidekiq into the Gemfile
+      - name: Setup bundler
+        if: matrix.bundler != ''
+        run: |
+          gem uninstall bundler --all
+          gem install bundler --no-document --version ${{ matrix.bundler }}
+      - name: Set Appraisal bundle
+        if: matrix.appraisal != ''
+        run: |
+          echo "using gemfile gemfiles/${{ matrix.appraisal }}.gemfile"
+          bundle config set gemfile "gemfiles/${{ matrix.appraisal }}.gemfile"
+      - name: Install bundle
+        run: |
           bundle update
-          bundle exec appraisal generate
-          bundle config set gemfile "gemfiles/sidekiq_${{ matrix.sidekiq }}.gemfile"
-      - name: install dependencies
-        run:  bundle install
-      - name: specs
-        if:   matrix.job == 'rspec'
+      - name: Run specs
         run:  bundle exec rake spec
-      - name: standardrb
-        if:   matrix.job == 'standardrb'
-        run:  bundle exec rake standard
+      - name: Run standardrb
+        if:   matrix.standardrb == true
+        run:  bundle exec standardrb

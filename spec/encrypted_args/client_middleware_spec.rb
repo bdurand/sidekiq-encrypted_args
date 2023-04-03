@@ -120,6 +120,21 @@ describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 
+  it "should not encrypt arguments that are already encrypted" do
+    called = false
+    job["encrypted_args"] = ArrayIndexSecretWorker.sidekiq_options["encrypted_args"]
+    encrypted_value = Sidekiq::EncryptedArgs.encrypt(job["args"][1])
+    job["args"][1] = encrypted_value
+
+    middleware.call(ArrayIndexSecretWorker, job, queue) do
+      called = true
+    end
+
+    expect(called).to eq true
+    expect(job["encrypted_args"]).to match_array [1]
+    expect(job["args"][1]).to eq encrypted_value
+  end
+
   context "deprecated configurations", :no_warn do
     it "should only encrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
       called = false

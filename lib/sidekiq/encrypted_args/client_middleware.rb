@@ -28,7 +28,7 @@ module Sidekiq
         if encrypted_args
           job_args = job["args"]
           job_args.each_with_index do |value, position|
-            if encrypted_args.include?(position)
+            if encrypted_args.include?(position) && !EncryptedArgs.encrypted?(value)
               job_args[position] = EncryptedArgs.encrypt(value)
             end
           end

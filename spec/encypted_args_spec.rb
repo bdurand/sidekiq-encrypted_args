@@ -91,15 +91,15 @@ describe Sidekiq::EncryptedArgs do
     it "should configure the Sidekiq client middleware" do
       as_sidekiq_client!
       Sidekiq::EncryptedArgs.configure!
-      expect(Sidekiq.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
-      expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq false
+      expect(sidekiq_config.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
+      expect(sidekiq_config.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq false
     end
 
     it "should configure the Sidekiq server middleware" do
       as_sidekiq_server!
       Sidekiq::EncryptedArgs.configure!
-      expect(Sidekiq.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
-      expect(Sidekiq.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
+      expect(sidekiq_config.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
+      expect(sidekiq_config.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq true
     end
 
     it "should set the secret from the configure! method" do
@@ -119,20 +119,20 @@ describe Sidekiq::EncryptedArgs do
 
     it "should load client middleware first and server middleware last on server" do
       as_sidekiq_server!
-      Sidekiq.server_middleware.add(EmptyMiddleware)
-      Sidekiq.client_middleware.add(EmptyMiddleware)
+      sidekiq_config.server_middleware.add(EmptyMiddleware)
+      sidekiq_config.client_middleware.add(EmptyMiddleware)
       Sidekiq::EncryptedArgs.configure!(secret: "0xDEADBEEF")
 
-      expect(Sidekiq.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
-      expect(Sidekiq.server_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ServerMiddleware]
+      expect(sidekiq_config.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+      expect(sidekiq_config.server_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ServerMiddleware]
     end
 
     it "should load client middleware first on client" do
       as_sidekiq_client!
-      Sidekiq.client_middleware.add(EmptyMiddleware)
+      sidekiq_config.client_middleware.add(EmptyMiddleware)
       Sidekiq::EncryptedArgs.configure!(secret: "0xDEADBEEF")
 
-      expect(Sidekiq.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+      expect(sidekiq_config.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
     end
   end
 end
