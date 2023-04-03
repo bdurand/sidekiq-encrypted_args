@@ -31,7 +31,7 @@ module Sidekiq
         @encryptors = make_encryptors(value)
       end
 
-      # Add the client and server middleware to the Sidekiq
+      # Add the client and server middleware to the default Sidekiq
       # middleware chains. If you need to ensure the order of where the middleware is
       # added, you can forgo this method and add it yourself.
       #
@@ -64,6 +64,7 @@ module Sidekiq
       # @return [String]
       def encrypt(data)
         return nil if data.nil?
+
         json = (data.respond_to?(:to_json) ? data.to_json : JSON.generate(data))
         encrypted = encrypt_string(json)
         if encrypted == json
@@ -83,6 +84,13 @@ module Sidekiq
         return encrypted_data unless SecretKeys::Encryptor.encrypted?(encrypted_data)
         json = decrypt_string(encrypted_data)
         JSON.parse(json)
+      end
+
+      # Check if a value is encrypted.
+      #
+      # @return [Boolean]
+      def encrypted?(value)
+        SecretKeys::Encryptor.encrypted?(value)
       end
 
       # Private helper method to get the encrypted args option from an options hash. The value of this option
