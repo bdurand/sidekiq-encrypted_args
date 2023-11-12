@@ -1,7 +1,6 @@
 require "bundler/setup"
 
 require "sidekiq"
-require "climate_control"
 
 require_relative "../lib/sidekiq-encrypted_args"
 
@@ -24,23 +23,42 @@ RSpec.configure do |config|
   end
 end
 
+# Helper method to temporarily set environment variables.
+def with_environment(env)
+  save_vals = env.keys.collect { |k| [k, ENV[k.to_s]] }
+  begin
+    env.each { |k, v| ENV[k.to_s] = v }
+    yield
+  ensure
+    save_vals.each { |k, v| ENV[k.to_s] = v }
+  end
+end
+
 # Reset all middleware for nested context and then restore.
 #
 # @note Middleware args are not preserved
 def with_empty_middleware
   # Save the middleware context
-  server_middleware = Sidekiq.server_middleware.entries.map(&:klass)
-  client_middleware = Sidekiq.client_middleware.entries.map(&:klass)
-  Sidekiq.server_middleware.clear
-  Sidekiq.client_middleware.clear
+  server_middleware = sidekiq_config.server_middleware.entries.map(&:klass)
+  client_middleware = sidekiq_config.client_middleware.entries.map(&:klass)
+  sidekiq_config.server_middleware.clear
+  sidekiq_config.client_middleware.clear
 
   yield
 
   # Clear anything added and restore all previously registered middleware
-  Sidekiq.server_middleware.clear
-  Sidekiq.client_middleware.clear
-  server_middleware.each { |m| Sidekiq.server_middleware.add(m) }
-  client_middleware.each { |m| Sidekiq.client_middleware.add(m) }
+  sidekiq_config.server_middleware.clear
+  sidekiq_config.client_middleware.clear
+  server_middleware.each { |m| sidekiq_config.server_middleware.add(m) }
+  client_middleware.each { |m| sidekiq_config.client_middleware.add(m) }
+end
+
+def sidekiq_config
+  if Sidekiq.respond_to?(:default_configuration)
+    Sidekiq.default_configuration
+  else
+    Sidekiq
+  end
 end
 
 def as_sidekiq_server!

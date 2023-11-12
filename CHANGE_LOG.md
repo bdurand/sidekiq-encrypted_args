@@ -4,29 +4,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.1.1
+## 1.1.2
 
 ### Added
 
 - Sidekiq 7 compatibility.
 
+## 1.1.1
+
+### Fixed
+
+- Client middleware will no longer encrypt already encrypted arguments when a job is retried.
+
 ## 1.1.0
 
 ### Added
 
-- Added additional option to specify encrypted args with array of argument indexes.
-
-### Fixed
-
 - Use `to_json` if it is defined when serializing encrypted args to JSON.
 - Add client middleware to the server default configuration. This ensures that arguments will be encrypted if a worker enqueues a job with encrypted arguments.
-- Don't blow up if class name that is not defined is passed to client middleware.
+- Client middleware now reads sidekiq options from the job hash instead of from the worker class so that the list of encrypted arguments is always in sync on the job payload.
+- Added additional option to specify encrypted args with array of argument indexes.
 
 ### Changed
 
-- Client middleware now reads sidekiq options from the job hash instead of from the worker class so that the list of encrypted arguments is always in sync on the job payload.
+- Client middleware is now prepended while server middleware is appended.
+
+### Fixed
+
+- Don't raise error if undefined class name is passed to client middleware as a string.
+
+### Deprecated
+
 - Deprecated setting encrypted args as hash or array of booleans.
-- Client middleware is prepended while server middleware is appended.
 
 ## 1.0.2
 
@@ -38,8 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Now works with scheduled jobs
-- Scheduled jobs dispatch by class name instead of `Class`, requiring a constant lookup
+- Added support for scheduled jobs
 
 ## 1.0.0
 
