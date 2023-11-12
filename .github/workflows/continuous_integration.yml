@@ -1,4 +1,5 @@
 name: Continuous Integration
+
 on:
   push:
     branches:
@@ -7,48 +8,65 @@ on:
     tags:
       - v*
   pull_request:
+    branches-ignore:
+      - actions-*
+
 env:
   BUNDLE_CLEAN: "true"
   BUNDLE_PATH: vendor/bundle
   BUNDLE_JOBS: 3
   BUNDLE_RETRY: 3
+
 jobs:
-  specs:
-    name: ${{ matrix.job }} ruby-${{ matrix.ruby }} ${{ matrix.sidekiq && format('sidekiq-{0}', matrix.sidekiq) }}
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ 2.4, 2.5, 2.6, 2.7 ]
-        sidekiq: [4, 5, 6]
-        job: [ rspec ]
-        exclude:
-          - ruby: 2.4
-            sidekiq: 6
         include:
-          - ruby: 2.7
-            sidekiq: original
-            job: rspec
-          - ruby: 2.7
-            job: standardrb
+          - ruby: "ruby"
+            standardrb: true
+          - ruby: "3.2"
+            appraisal: "sidekiq_7"
+          - ruby: "3.1"
+            appraisal: "sidekiq_7.0"
+          - ruby: "3.0"
+            appraisal: "sidekiq_6.x"
+          - ruby: "2.7"
+            appraisal: "sidekiq_6.0"
+          - ruby: "2.6"
+            appraisal: "sidekiq_5.x"
+          - ruby: "2.5"
+            appraisal: "sidekiq_5.0"
+          - ruby: "2.4"
+            appraisal: "sidekiq_4.x"
+          - ruby: "2.4"
+            appraisal: "sidekiq_4.0"
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-      - name: set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-      - name: inject sidekiq ${{ matrix.sidekiq }}
-        if:   matrix.sidekiq != 'original' && matrix.sidekiq != null
-        run: | # inject a specific version of sidekiq into the Gemfile
-          bundle update
-          bundle exec appraisal generate
-          bundle config set gemfile "gemfiles/sidekiq_${{ matrix.sidekiq }}.gemfile"
-      - name: install dependencies
-        run:  bundle install
-      - name: specs
-        if:   matrix.job == 'rspec'
-        run:  bundle exec rake spec
-      - name: standardrb
-        if:   matrix.job == 'standardrb'
-        run:  bundle exec rake standard
+    - uses: actions/checkout@v4
+    - name: Set up Ruby ${{ matrix.ruby }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: "${{ matrix.ruby }}"
+    - name: Install packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libsqlite3-dev
+    - name: Setup bundler
+      if: matrix.bundler != ''
+      run: |
+        gem uninstall bundler --all
+        gem install bundler --no-document --version ${{ matrix.bundler }}
+    - name: Set Appraisal bundle
+      if: matrix.appraisal != ''
+      run: |
+        echo "using gemfile gemfiles/${{ matrix.appraisal }}.gemfile"
+        bundle config set gemfile "gemfiles/${{ matrix.appraisal }}.gemfile"
+    - name: Install gems
+      run: |
+        bundle update
+    - name: Run Tests
+      run: bundle exec rake
+    - name: standardrb
+      if:   matrix.standardrb == true
+      run:  bundle exec rake standard
