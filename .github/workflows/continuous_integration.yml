@@ -40,8 +40,6 @@ jobs:
             appraisal: "sidekiq_5.0"
           - ruby: "2.5"
             appraisal: "sidekiq_4.x"
-          - ruby: "2.5"
-            appraisal: "sidekiq_4.0"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Ruby ${{ matrix.ruby }}
