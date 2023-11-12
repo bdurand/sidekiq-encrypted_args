@@ -1,6 +1,7 @@
 # Sidekiq Encrypted Args
 
-[![Continuous Integration](https://github.com/bdurand/sidekiq-encrypted_args/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/bdurand/sidekiq-encrypted_args/actions?query=workflow%3A%22Continuous+Integration%22)
+[![Continuous Integration](https://github.com/bdurand/sidekiq-encrypted_args/actions/workflows/continuous_integration.yml/badge.svg)](https://github.com/bdurand/sidekiq-encrypted_args/actions/workflows/continuous_integration.yml)
+[![Regression Test](https://github.com/bdurand/sidekiq-encrypted_args/actions/workflows/regression_test.yml/badge.svg)](https://github.com/bdurand/sidekiq-encrypted_args/actions/workflows/regression_test.yml)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
 
 Support for encrypting arguments for [Sidekiq](https://github.com/mperham/sidekiq).
