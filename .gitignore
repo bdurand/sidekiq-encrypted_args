@@ -10,3 +10,6 @@ Gemfile.lock
 /spec/reports/
 /tmp/
 .DS_Store
+Gemfile.lock
+.ruby-version
+.rspec_status
