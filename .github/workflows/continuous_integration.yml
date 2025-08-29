@@ -5,11 +5,10 @@ on:
     branches:
       - master
       - actions-*
-    tags:
-      - v*
   pull_request:
     branches-ignore:
       - actions-*
+  workflow_dispatch:
 
 env:
   BUNDLE_CLEAN: "true"
@@ -26,6 +25,10 @@ jobs:
         include:
           - ruby: "ruby"
             standardrb: true
+          - ruby: "3.4"
+            appraisal: "sidekiq_8"
+          - ruby: "3.3"
+            appraisal: "sidekiq_8.0"
           - ruby: "3.2"
             appraisal: "sidekiq_7"
           - ruby: "3.1"
@@ -46,10 +49,6 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: "${{ matrix.ruby }}"
-    - name: Install packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install libsqlite3-dev
     - name: Setup bundler
       if: matrix.bundler != ''
       run: |
