@@ -90,44 +90,11 @@ describe Sidekiq::EncryptedArgs::ServerMiddleware do
       expect(job["args"]).to eq args
     end
 
-    it "should only decrypt arguments whose position index is set to true when the encrypted_args option is a hash" do
-      called = false
-      job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = HashOptionSecretWorker.sidekiq_options["encrypted_args"]
-      middleware.call(HashOptionSecretWorker.new, job, queue) do
-        called = true
-      end
-      expect(called).to eq true
-      expect(job["args"]).to eq args
-    end
-
-    it "should only decrypt arguments whose position index is set to true when the encrypted_args option is an array" do
-      called = false
-      job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = ArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
-      middleware.call(ArrayOptionSecretWorker.new, job, queue) do
-        called = true
-      end
-      expect(called).to eq true
-      expect(job["args"]).to eq args
-    end
-
     it "should only decrypt arguments whose names are provided in the encrypted_args option array" do
       called = false
       job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
       job["encrypted_args"] = NamedArrayOptionSecretWorker.sidekiq_options["encrypted_args"]
       middleware.call(NamedArrayOptionSecretWorker.new, job, queue) do
-        called = true
-      end
-      expect(called).to eq true
-      expect(job["args"]).to eq args
-    end
-
-    it "should only decrypt arguments whose names are set to true in the encrypted_args option hash" do
-      called = false
-      job["args"] = [args[0], Sidekiq::EncryptedArgs.encrypt(args[1]), args[2]]
-      job["encrypted_args"] = NamedHashOptionSecretWorker.sidekiq_options["encrypted_args"]
-      middleware.call(NamedHashOptionSecretWorker.new, job, queue) do
         called = true
       end
       expect(called).to eq true

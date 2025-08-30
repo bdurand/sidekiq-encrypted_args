@@ -3,6 +3,12 @@
 module Sidekiq
   module EncryptedArgs
     # Sidekiq server middleware for decrypting arguments on jobs that have encrypted args.
+    #
+    # This middleware is responsible for decrypting job arguments before they
+    # are passed to the worker's perform method. It runs on the server side
+    # when jobs are processed.
+    #
+    # @see ClientMiddleware
     class ServerMiddleware
       # Wrap the server process to decrypt incoming arguments
       def call(worker, job, queue)

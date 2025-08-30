@@ -5,6 +5,11 @@ require "secret_keys"
 require "sidekiq"
 
 module Sidekiq
+  # Provides middleware for encrypting sensitive arguments in Sidekiq jobs.
+  #
+  # This module allows you to specify which job arguments should be encrypted
+  # in Redis to protect sensitive information like API keys, passwords, or
+  # personally identifiable information.
   module EncryptedArgs
     # Error thrown when the secret is invalid
     class InvalidSecretError < StandardError
@@ -25,7 +30,13 @@ module Sidekiq
       # when decrypting the arguments when the job gets run. If you are using the
       # environment variable, separate the keys with spaces.
       #
-      # @param [String] value One or more secrets to use for encrypting arguments.
+      # @example Setting a single secret
+      #   Sidekiq::EncryptedArgs.secret = "your_secret_key"
+      #
+      # @example Rolling secrets (multiple keys for backward compatibility)
+      #   Sidekiq::EncryptedArgs.secret = ["new_secret", "old_secret", "older_secret"]
+      #
+      # @param [String, Array<String>] value One or more secrets to use for encrypting arguments.
       # @return [void]
       def secret=(value)
         @encryptors = make_encryptors(value)
@@ -36,6 +47,13 @@ module Sidekiq
       # added, you can forgo this method and add it yourself.
       #
       # This method prepends client middleware and appends server middleware.
+      #
+      # @example Basic configuration
+      #   Sidekiq::EncryptedArgs.configure!(secret: "your_secret_key")
+      #
+      # @example Configuration using environment variable
+      #   ENV['SIDEKIQ_ENCRYPTED_ARGS_SECRET'] = "your_secret_key"
+      #   Sidekiq::EncryptedArgs.configure!
       #
       # @param [String] secret optionally set the secret here. See {.secret=}
       def configure!(secret: nil)
@@ -59,6 +77,12 @@ module Sidekiq
 
       # Encrypt a value.
       #
+      # @example Encrypting a simple value
+      #   EncryptedArgs.encrypt("secret_value") #=> "encrypted_string"
+      #
+      # @example Encrypting complex data
+      #   EncryptedArgs.encrypt({api_key: "secret", user_id: 123}) #=> "encrypted_string"
+      #
       # @param [#to_json, Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
       #
       # @return [String]
@@ -75,6 +99,12 @@ module Sidekiq
       end
 
       # Decrypt data
+      #
+      # @example Decrypting an encrypted value
+      #   EncryptedArgs.decrypt("encrypted_string") #=> "original_value"
+      #
+      # @example Handling unencrypted data
+      #   EncryptedArgs.decrypt("unencrypted_string") #=> "unencrypted_string"
       #
       # @param [String] encrypted_data Data that was previously encrypted. If the value passed in is
       # an unencrypted string, then the string itself will be returned.
@@ -107,11 +137,9 @@ module Sidekiq
         if option == true
           job["args"].size.times { |i| indexes << i }
         elsif option.is_a?(Hash)
-          deprecation_warning("hash")
-          indexes = replace_argument_positions(worker_class, option)
+          raise ArgumentError.new("Hash-based argument encryption is no longer supported.")
         else
           array_type = nil
-          deprecation_message = nil
           Array(option).each_with_index do |val, position|
             current_type = nil
             if val.is_a?(Integer)
@@ -123,16 +151,15 @@ module Sidekiq
               indexes << position if position
               current_type = :symbol
             else
-              deprecation_message = "boolean array"
-              indexes << position if val
+              raise ArgumentError.new("Encrypted args must be specified as integers or symbols.")
             end
+
             if array_type && current_type
-              deprecation_message = "array of mixed types"
+              raise ArgumentError.new("Encrypted args cannot mix integers and symbols.")
             else
               array_type ||= current_type
             end
           end
-          deprecation_warning(deprecation_message) if deprecation_message
         end
         indexes
       end
@@ -172,10 +199,6 @@ module Sidekiq
         Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
       end
 
-      def deprecation_warning(message)
-        warn("Sidekiq::EncryptedArgs: setting encrypted_args to #{message} is deprecated; support will be removed in version 1.2.")
-      end
-
       # @param [String] class_name name of a class
       # @return [Class] class that was referenced by name
       def constantize(class_name)
@@ -191,11 +214,12 @@ module Sidekiq
         encrypted_indexes = []
         encrypt_option_hash.each do |key, value|
           next unless value
-          if key.is_a?(Symbol) || key.is_a?(String)
+
+          if key.is_a?(Integer) || (key.is_a?(String) && key.match?(INTEGER_PATTERN))
+            encrypted_indexes << key.to_i
+          elsif key.is_a?(Symbol) || key.is_a?(String)
             position = perform_method_parameter_index(worker_class, key)
             encrypted_indexes << position if position
-          elsif key.is_a?(Integer)
-            encrypted_indexes << key
           end
         end
         encrypted_indexes
