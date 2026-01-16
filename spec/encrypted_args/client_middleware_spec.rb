@@ -2,7 +2,7 @@
 
 require_relative "../spec_helper"
 
-describe Sidekiq::EncryptedArgs::ClientMiddleware do
+RSpec.describe Sidekiq::EncryptedArgs::ClientMiddleware do
   let(:args) { ["foo", "bar", "baz"] }
   let(:job) { {"args" => args} }
   let(:queue) { "default" }

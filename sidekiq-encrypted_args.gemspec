@@ -38,5 +38,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "sidekiq", ">= 4.0"
   spec.add_dependency "secret_keys"
 
-  spec.add_development_dependency "bundler", "~>2.0"
+  spec.add_development_dependency "bundler"
 end

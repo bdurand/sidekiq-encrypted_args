@@ -2,7 +2,7 @@
 
 require_relative "spec_helper"
 
-describe Sidekiq::EncryptedArgs do
+RSpec.describe Sidekiq::EncryptedArgs do
   it "should encrypt and decrypt data" do
     Sidekiq::EncryptedArgs.secret = "key"
     encrypted = Sidekiq::EncryptedArgs.encrypt("foobar")

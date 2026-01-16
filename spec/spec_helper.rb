@@ -5,8 +5,10 @@ require "sidekiq"
 require_relative "../lib/sidekiq-encrypted_args"
 
 RSpec.configure do |config|
-  config.warnings = true
+  config.disable_monkey_patching!
+  config.default_formatter = "doc" if config.files_to_run.one? || ENV["RSPEC_FORMATTER"] == "doc"
   config.order = :random
+  Kernel.srand config.seed
 
   config.around(:each) do |example|
     if example.metadata[:no_warn]
