@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   spec.bindir = "bin"
   spec.executables = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
 
-  spec.required_ruby_version = ">= 3.0"
+  spec.required_ruby_version = ">= 2.7"
 
   spec.add_dependency "sidekiq", ">= 6.0"
   spec.add_dependency "secret_keys"
