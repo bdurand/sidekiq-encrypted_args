@@ -10,7 +10,16 @@ module Sidekiq
     #
     # @see ServerMiddleware
     class ClientMiddleware
-      # Encrypt specified arguments before they're sent off to the queue
+      include Sidekiq::ClientMiddleware
+
+      # Encrypt specified arguments before they're sent off to the queue.
+      #
+      # @param [String, Class] worker_class The worker class or class name
+      # @param [Hash] job The Sidekiq job hash containing arguments and metadata
+      # @param [String] queue The name of the queue
+      # @param [Object, nil] redis_pool Optional Redis connection pool (legacy parameter)
+      # @return [void]
+      # @yield Passes control to the next middleware in the chain
       def call(worker_class, job, queue, redis_pool = nil)
         if job.include?("encrypted_args")
           encrypted_args = EncryptedArgs.encrypted_args_option(worker_class, job)
