@@ -22,7 +22,7 @@ To use the gem, you will need to specify a secret that will be used to encrypt t
 Sidekiq::EncryptedArgs.configure!(secret: "YourSecretKey")
 ```
 
-If the secret is not set, the value of the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable will be used as the secret. If this variable is not set, job arguments will not be encrypted.
+If the secret is not set explicitly, the value of the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable will be used as the secret. If you call `configure!` without setting a secret (either explicitly or via the environment variable), an error will be raised.
 
 The call to `Sidekiq::EncryptedArgs.configure!` will **prepend** the client encryption middleware and **append** server decryption middleware. By doing this, any other middleware you register will only receive the encrypted parameters (e.g. logging middleware will receive the encrypted parameters).
 
@@ -42,7 +42,8 @@ Sidekiq.configure_server do |config|
     chain.add Sidekiq::EncryptedArgs::ServerMiddleware
   end
 
-  # register client middleware on the server so that starting jobs in a Sidekiq::Worker also get encrypted args
+  # Register client middleware on the server so that starting jobs from within
+  # another also get encrypted args.
   # https://github.com/mperham/sidekiq/wiki/Middleware#client-middleware-registered-in-both-places
   config.client_middleware do |chain|
     chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
@@ -58,7 +59,7 @@ Setting the option to `true` will encrypt all the arguments passed to the `perfo
 
 ```ruby
 class SecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: true
 
@@ -67,20 +68,24 @@ class SecretWorker
 end
 ```
 
-You can also choose to only encrypt specific arguments with an array of either argument names (symbols or strings) or indexes. This is useful to preserve visibility into non-sensitive arguments for troubleshooting or other reasons. Both of these examples encrypt just the second argument to the `perform` method.
+You can also choose to only encrypt specific arguments by specifying either argument names (as symbols or strings) or argument positions (as integers). This is useful to preserve visibility into non-sensitive arguments for troubleshooting or other reasons. All of these examples encrypt just the second argument to the `perform` method.
 
 ```ruby
-# Pass in a list of argument names that should be encrypted
+# Pass in a single argument name
+sidekiq_options encrypted_args: :arg_2
+# or as a string
+sidekiq_options encrypted_args: "arg_2"
+# or as an array
 sidekiq_options encrypted_args: [:arg_2]
-# or
-sidekiq_options encrypted_args: ["arg_2"]
 
 def perform(arg_1, arg_2, arg_3)
 end
 ```
 
 ```ruby
-# Pass in an array of integers indicating which argument positions should be encrypted
+# Pass in an integer indicating which argument position should be encrypted (0-indexed)
+sidekiq_options encrypted_args: 1
+# or as an array
 sidekiq_options encrypted_args: [1]
 
 def perform(arg_1, arg_2, arg_3)
@@ -99,7 +104,7 @@ Sidekiq::EncryptedArgs.secret = ["CurrentSecret", "OldSecret", "EvenOlderSecret"
 
 The first (left most) key will be considered the current key, and is used for encrypting arguments. When decrypting, we iterate over the secrets list until we find the correct one. This allows you to switch you secret keys without breaking jobs already enqueued in Redis.
 
-If you are using the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable to specify your secret, you can delimit multiple keys with a spaces.
+If you are using the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable to specify your secret, you can separate multiple keys with whitespace (spaces or tabs).
 
 You can also safely add encryption to an existing worker. Any jobs that are already enqueued will still run even without having the arguments encrypted in Redis.
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "spec_helper"
+require "spec_helper"
 
 RSpec.describe Sidekiq::EncryptedArgs do
   it "should encrypt and decrypt data" do
@@ -57,11 +57,11 @@ RSpec.describe Sidekiq::EncryptedArgs do
     end
   end
 
-  it "should not encrypt if the secret key is not set" do
+  it "should raise an error if the secret key is not set" do
     allow(Sidekiq.logger).to receive(:warn).with(instance_of(String))
     Sidekiq::EncryptedArgs.secret = nil
     with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "") do
-      expect(Sidekiq::EncryptedArgs.encrypt("foobar")).to eq "foobar"
+      expect { Sidekiq::EncryptedArgs.encrypt("foobar") }.to raise_error(Sidekiq::EncryptedArgs::InvalidSecretError)
     end
   end
 
@@ -93,6 +93,29 @@ RSpec.describe Sidekiq::EncryptedArgs do
       Sidekiq::EncryptedArgs.configure!
       expect(sidekiq_config.client_middleware.exists?(Sidekiq::EncryptedArgs::ClientMiddleware)).to eq true
       expect(sidekiq_config.server_middleware.exists?(Sidekiq::EncryptedArgs::ServerMiddleware)).to eq false
+    end
+
+    it "should set the secret from the configure! method" do
+      Sidekiq::EncryptedArgs.secret = nil
+      Sidekiq::EncryptedArgs.configure!(secret: "Foo")
+      encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+      expect(encryptors).to_not eq nil
+    end
+
+    it "should set the secret key with the environment variable in the configure! method" do
+      Sidekiq::EncryptedArgs.secret = nil
+      with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "Bar") do
+        Sidekiq::EncryptedArgs.configure!
+        encryptors = Sidekiq::EncryptedArgs.instance_variable_get(:@encryptors)
+        expect(encryptors).to_not eq nil
+      end
+    end
+
+    it "should raise an error if the secret is not provided and the environment variable is not set" do
+      Sidekiq::EncryptedArgs.secret = nil
+      with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: nil) do
+        expect { Sidekiq::EncryptedArgs.configure! }.to raise_error(Sidekiq::EncryptedArgs::InvalidSecretError)
+      end
     end
 
     it "should configure the Sidekiq server middleware" do

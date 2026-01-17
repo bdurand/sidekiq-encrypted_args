@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
       - actions-*
   pull_request:
     branches-ignore:
@@ -38,12 +38,6 @@ jobs:
             appraisal: "sidekiq_6"
           - ruby: "2.7"
             appraisal: "sidekiq_6.0"
-          - ruby: "2.6"
-            appraisal: "sidekiq_5"
-          - ruby: "2.5"
-            appraisal: "sidekiq_5.0"
-          - ruby: "2.5"
-            appraisal: "sidekiq_4"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Ruby ${{ matrix.ruby }}
