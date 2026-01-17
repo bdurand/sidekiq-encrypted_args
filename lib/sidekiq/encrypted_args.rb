@@ -176,16 +176,18 @@ module Sidekiq
       def encrypt_string(value)
         encryptor = encryptors.first
         return value if encryptor.nil?
+
         encryptor.encrypt(value)
       end
 
       def decrypt_string(value)
-        return value if encryptors == [nil]
         encryptors.each do |encryptor|
-          return encryptor.decrypt(value) if encryptor
+          return encryptor.decrypt(value)
         rescue OpenSSL::Cipher::CipherError
           # Not the right key, try the next one
         end
+
+        # None of the keys worked
         raise InvalidSecretError.new("Cannot decrypt. Invalid secret provided.")
       end
 
