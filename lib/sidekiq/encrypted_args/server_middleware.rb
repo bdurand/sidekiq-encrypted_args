@@ -10,7 +10,7 @@ module Sidekiq
     #
     # @see ClientMiddleware
     class ServerMiddleware
-      include Sidekiq::ServerMiddleware
+      include Sidekiq::ServerMiddleware if defined?(Sidekiq::ServerMiddleware)
 
       # Wrap the server process to decrypt incoming arguments.
       #

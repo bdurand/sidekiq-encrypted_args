@@ -42,7 +42,8 @@ Sidekiq.configure_server do |config|
     chain.add Sidekiq::EncryptedArgs::ServerMiddleware
   end
 
-  # register client middleware on the server so that starting jobs in a Sidekiq::Worker also get encrypted args
+  # Register client middleware on the server so that starting jobs from within
+  # another also get encrypted args.
   # https://github.com/mperham/sidekiq/wiki/Middleware#client-middleware-registered-in-both-places
   config.client_middleware do |chain|
     chain.prepend Sidekiq::EncryptedArgs::ClientMiddleware
@@ -58,7 +59,7 @@ Setting the option to `true` will encrypt all the arguments passed to the `perfo
 
 ```ruby
 class SecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: true
 

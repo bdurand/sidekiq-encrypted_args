@@ -10,7 +10,7 @@ module Sidekiq
     #
     # @see ServerMiddleware
     class ClientMiddleware
-      include Sidekiq::ClientMiddleware
+      include Sidekiq::ClientMiddleware if defined?(Sidekiq::ClientMiddleware)
 
       # Encrypt specified arguments before they're sent off to the queue.
       #

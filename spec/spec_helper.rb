@@ -78,14 +78,14 @@ class EmptyMiddleware
 end
 
 class RegularWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   def perform(arg_1, arg_2, arg_3)
   end
 end
 
 class NotSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: false
 
@@ -94,7 +94,7 @@ class NotSecretWorker
 end
 
 class SecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: true
 
@@ -104,7 +104,7 @@ end
 
 module Super
   class SecretWorker
-    include Sidekiq::Worker
+    include Sidekiq::Job
 
     sidekiq_options encrypted_args: "arg_3"
 
@@ -114,7 +114,7 @@ module Super
 end
 
 class ArrayIndexSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: [1]
 
@@ -123,7 +123,7 @@ class ArrayIndexSecretWorker
 end
 
 class NamedArrayOptionSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options "encrypted_args" => ["arg_2"]
 
