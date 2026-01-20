@@ -10,17 +10,17 @@ RSpec.configure do |config|
   config.order = :random
   Kernel.srand config.seed
 
-  config.around(:each) do |example|
-    if example.metadata[:no_warn]
-      save_stderr = $stderr
-      begin
-        $stderr = StringIO.new
-        example.run
-      ensure
-        $stderr = save_stderr
-      end
-    else
+  config.before(:each) do
+    Sidekiq::EncryptedArgs.secret = "foobar"
+  end
+
+  config.around(:each, :no_warn) do |example|
+    save_stderr = $stderr
+    begin
+      $stderr = StringIO.new
       example.run
+    ensure
+      $stderr = save_stderr
     end
   end
 end
@@ -78,14 +78,14 @@ class EmptyMiddleware
 end
 
 class RegularWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   def perform(arg_1, arg_2, arg_3)
   end
 end
 
 class NotSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: false
 
@@ -94,7 +94,7 @@ class NotSecretWorker
 end
 
 class SecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: true
 
@@ -104,7 +104,7 @@ end
 
 module Super
   class SecretWorker
-    include Sidekiq::Worker
+    include Sidekiq::Job
 
     sidekiq_options encrypted_args: "arg_3"
 
@@ -114,7 +114,7 @@ module Super
 end
 
 class ArrayIndexSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: [1]
 
@@ -123,18 +123,9 @@ class ArrayIndexSecretWorker
 end
 
 class NamedArrayOptionSecretWorker
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options "encrypted_args" => ["arg_2"]
-
-  def perform(arg_1, arg_2, arg_3)
-  end
-end
-
-class NamedHashOptionSecretWorker
-  include Sidekiq::Worker
-
-  sidekiq_options encrypted_args: {arg_2: true, arg_1: false}
 
   def perform(arg_1, arg_2, arg_3)
   end

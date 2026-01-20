@@ -11,11 +11,10 @@ module Sidekiq
   # in Redis to protect sensitive information like API keys, passwords, or
   # personally identifiable information.
   module EncryptedArgs
+    @encryptors = nil
+
     # Error thrown when the secret is invalid
     class InvalidSecretError < StandardError
-      def initialize
-        super("Cannot decrypt. Invalid secret provided.")
-      end
     end
 
     class << self
@@ -39,7 +38,7 @@ module Sidekiq
       # @param [String, Array<String>] value One or more secrets to use for encrypting arguments.
       # @return [void]
       def secret=(value)
-        @encryptors = make_encryptors(value)
+        @encryptors = make_encryptors(value).freeze
       end
 
       # Add the client and server middleware to the default Sidekiq
@@ -58,6 +57,7 @@ module Sidekiq
       # @param [String] secret optionally set the secret here. See {.secret=}
       def configure!(secret: nil)
         self.secret = secret unless secret.nil?
+        encryptors # Calling encryptors will validate that a secret is set.
 
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
@@ -127,7 +127,10 @@ module Sidekiq
       # can be `true` or an array indicating if each positional argument should be encrypted, or a hash
       # with keys for the argument position and true as the value.
       #
-      # @private
+      # @param [String, Class] worker_class The worker class or class name
+      # @param [Hash] job The Sidekiq job hash containing arguments and metadata
+      # @return [Array<Integer>, nil] Array of argument positions to encrypt, or nil if encryption is not configured
+      # @api private
       def encrypted_args_option(worker_class, job)
         option = job["encrypted_args"]
         return nil if option.nil?
@@ -154,7 +157,7 @@ module Sidekiq
               raise ArgumentError.new("Encrypted args must be specified as integers or symbols.")
             end
 
-            if array_type && current_type
+            if array_type && current_type != array_type
               raise ArgumentError.new("Encrypted args cannot mix integers and symbols.")
             else
               array_type ||= current_type
@@ -173,34 +176,47 @@ module Sidekiq
       def encrypt_string(value)
         encryptor = encryptors.first
         return value if encryptor.nil?
+
         encryptor.encrypt(value)
       end
 
       def decrypt_string(value)
-        return value if encryptors == [nil]
         encryptors.each do |encryptor|
-          begin
-            return encryptor.decrypt(value) if encryptor
-          rescue OpenSSL::Cipher::CipherError
-            # Not the right key, try the next one
-          end
+          return encryptor.decrypt(value)
+        rescue OpenSSL::Cipher::CipherError
+          # Not the right key, try the next one
         end
-        raise InvalidSecretError
+
+        # None of the keys worked
+        raise InvalidSecretError.new("Cannot decrypt. Invalid secret provided.")
       end
 
       def encryptors
-        if !defined?(@encryptors) || @encryptors.empty?
-          @encryptors = make_encryptors(ENV["SIDEKIQ_ENCRYPTED_ARGS_SECRET"].to_s.split)
+        if @encryptors.nil?
+          secret = ENV.fetch("SIDEKIQ_ENCRYPTED_ARGS_SECRET", "").strip
+          if secret.empty?
+            raise InvalidSecretError.new("Secret not set. Call Sidekiq::EncryptedArgs.secret= or set the SIDEKIQ_ENCRYPTED_ARGS_SECRET environment variable.")
+          end
+
+          @encryptors = make_encryptors(secret.split).freeze
         end
         @encryptors
       end
 
+      # Create encryptors from secrets.
+      #
+      # @param [String, Array<String>] secrets One or more secrets to create encryptors from
+      # @return [Array<SecretKeys::Encryptor>, nil] Array of encryptors or nil if no secrets provided
       def make_encryptors(secrets)
-        Array(secrets).map { |val| val.nil? ? nil : SecretKeys::Encryptor.from_password(val, SALT) }
+        return nil if secrets.nil?
+
+        Array(secrets).map { |val| SecretKeys::Encryptor.from_password(val, SALT) }
       end
 
-      # @param [String] class_name name of a class
-      # @return [Class] class that was referenced by name
+      # Convert a string class name into the actual class constant.
+      #
+      # @param [String] class_name Name of a class (e.g., "MyModule::MyClass")
+      # @return [Class] The class constant that was referenced by name
       def constantize(class_name)
         names = class_name.split("::")
         # Clear leading :: for root namespace since we're already calling from object
@@ -210,21 +226,11 @@ module Sidekiq
         names.inject(Object) { |constant, name| constant.const_get(name, false) }
       end
 
-      def replace_argument_positions(worker_class, encrypt_option_hash)
-        encrypted_indexes = []
-        encrypt_option_hash.each do |key, value|
-          next unless value
-
-          if key.is_a?(Integer) || (key.is_a?(String) && key.match?(INTEGER_PATTERN))
-            encrypted_indexes << key.to_i
-          elsif key.is_a?(Symbol) || key.is_a?(String)
-            position = perform_method_parameter_index(worker_class, key)
-            encrypted_indexes << position if position
-          end
-        end
-        encrypted_indexes
-      end
-
+      # Get the index of a parameter in the worker's perform method.
+      #
+      # @param [Class] worker_class The worker class to inspect
+      # @param [String, Symbol] parameter The parameter name to find
+      # @return [Integer, nil] The zero-based index of the parameter, or nil if not found
       def perform_method_parameter_index(worker_class, parameter)
         if worker_class
           parameter = parameter.to_sym

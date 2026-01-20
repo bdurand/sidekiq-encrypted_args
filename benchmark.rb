@@ -7,14 +7,14 @@ require "sidekiq"
 require_relative "lib/sidekiq/encrypted_args"
 
 class WorkerWithoutEncryption
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   def perform(arg_1, arg_2, arg_3)
   end
 end
 
 class WorkerWithEncryption
-  include Sidekiq::Worker
+  include Sidekiq::Job
 
   sidekiq_options encrypted_args: [true, true, true]
 

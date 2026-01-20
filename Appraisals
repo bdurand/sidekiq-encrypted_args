@@ -20,18 +20,6 @@ appraise "sidekiq_6" do
   gem "sidekiq", "~> 6.0"
 end
 
-appraise "sidekiq_6.0" do
-  gem "sidekiq", "6.0.0"
-end
-
-appraise "sidekiq_5" do
-  gem "sidekiq", "~> 5.0"
-end
-
-appraise "sidekiq_5.0" do
-  gem "sidekiq", "5.0.0"
-end
-
-appraise "sidekiq_4" do
-  gem "sidekiq", "~> 4.0"
+appraise "sidekiq_6.3" do
+  gem "sidekiq", "6.3.0"
 end
