@@ -51,6 +51,15 @@ Sidekiq.configure_server do |config|
 end
 ```
 
+If there is specific middleware you want to insert the encryption or decryption middleware before or after, you can use the following helper methods:
+
+```ruby
+Sidekiq::EncryptedArgs.encrypt_before(SomeOtherMiddlewareClass)
+Sidekiq::EncryptedArgs.encrypt_after(SomeOtherMiddlewareClass)
+Sidekiq::EncryptedArgs.decrypt_before(SomeOtherMiddlewareClass)
+Sidekiq::EncryptedArgs.decrypt_after(SomeOtherMiddlewareClass)
+```
+
 ## Worker Configuration
 
 To declare that a worker is using encrypted arguments, you must set the `encrypted_args` sidekiq option.

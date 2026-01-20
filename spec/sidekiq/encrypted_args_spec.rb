@@ -157,5 +157,67 @@ RSpec.describe Sidekiq::EncryptedArgs do
 
       expect(sidekiq_config.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
     end
+
+    describe "encrypt_before" do
+      it "should insert client middleware before specified middleware on client" do
+        as_sidekiq_client!
+        sidekiq_config.client_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.encrypt_before(EmptyMiddleware)
+
+        expect(sidekiq_config.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+      end
+
+      it "should insert client middleware before specified middleware on server" do
+        as_sidekiq_server!
+        sidekiq_config.client_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.encrypt_before(EmptyMiddleware)
+
+        expect(sidekiq_config.client_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ClientMiddleware, EmptyMiddleware]
+      end
+    end
+
+    describe "encrypt_after" do
+      it "should insert client middleware after specified middleware on client" do
+        as_sidekiq_client!
+        sidekiq_config.client_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.encrypt_after(EmptyMiddleware)
+
+        expect(sidekiq_config.client_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ClientMiddleware]
+      end
+
+      it "should insert client middleware after specified middleware on server" do
+        as_sidekiq_server!
+        sidekiq_config.client_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.encrypt_after(EmptyMiddleware)
+
+        expect(sidekiq_config.client_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ClientMiddleware]
+      end
+    end
+
+    describe "decrypt_before" do
+      it "should insert server middleware before specified middleware" do
+        as_sidekiq_server!
+        sidekiq_config.server_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.decrypt_before(EmptyMiddleware)
+
+        expect(sidekiq_config.server_middleware.map(&:klass)).to eq [Sidekiq::EncryptedArgs::ServerMiddleware, EmptyMiddleware]
+      end
+    end
+
+    describe "decrypt_after" do
+      it "should insert server middleware after specified middleware" do
+        as_sidekiq_server!
+        sidekiq_config.server_middleware.add(EmptyMiddleware)
+        Sidekiq::EncryptedArgs.secret = "secret_key"
+        Sidekiq::EncryptedArgs.decrypt_after(EmptyMiddleware)
+
+        expect(sidekiq_config.server_middleware.map(&:klass)).to eq [EmptyMiddleware, Sidekiq::EncryptedArgs::ServerMiddleware]
+      end
+    end
   end
 end
