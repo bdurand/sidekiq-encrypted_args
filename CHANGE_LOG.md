@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.1
+
+### Added
+
+- Added initializer helper methods `Sidekiq::EncryptedArgs.encrypt_before` and `Sidekiq::EncryptedArgs.encrypt_after` to allow specifying middleware order for inserting the client encryption middleware and `Sidekiq::EncryptedArgs.decrypt_before` and `Sidekiq::EncryptedArgs.decrypt_after` to allow specifying middleware order for inserting the server decryption middleware.
+
 ## 2.0.0
 
 ### Changed
