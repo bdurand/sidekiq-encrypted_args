@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A secret key is now required to be set. Previously the code would silently fail if no key was set. This change improves security by protecting against misconfiguration leaking data into Redis.
-- Bumped minimum required Ruby version to 3.0 and Sidekiq to 6.0.
+- Bumped minimum required Ruby version to 2.7 and Sidekiq to 6.3.
 
 ## 1.2.0
 

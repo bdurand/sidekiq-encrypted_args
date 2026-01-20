@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     Appraisals
     Gemfile
     Gemfile.lock
+    benchmark.rb
     Rakefile
     gemfiles/
     spec/
@@ -35,7 +36,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 2.7"
 
-  spec.add_dependency "sidekiq", ">= 6.0"
+  spec.add_dependency "sidekiq", ">= 6.3"
   spec.add_dependency "secret_keys"
 
   spec.add_development_dependency "bundler"
