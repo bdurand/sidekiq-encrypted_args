@@ -75,6 +75,66 @@ module Sidekiq
         end
       end
 
+      # Insert the client encryption middleware before the specified middleware.
+      #
+      # @param [Class] middleware The middleware class to insert before
+      # @return [void]
+      def encrypt_before(middleware)
+        Sidekiq.configure_client do |config|
+          config.client_middleware do |chain|
+            chain.insert_before(middleware, Sidekiq::EncryptedArgs::ClientMiddleware)
+          end
+        end
+
+        Sidekiq.configure_server do |config|
+          config.client_middleware do |chain|
+            chain.insert_before(middleware, Sidekiq::EncryptedArgs::ClientMiddleware)
+          end
+        end
+      end
+
+      # Insert the client encryption middleware after the specified middleware.
+      #
+      # @param [Class] middleware The middleware class to insert after
+      # @return [void]
+      def encrypt_after(middleware)
+        Sidekiq.configure_client do |config|
+          config.client_middleware do |chain|
+            chain.insert_after(middleware, Sidekiq::EncryptedArgs::ClientMiddleware)
+          end
+        end
+
+        Sidekiq.configure_server do |config|
+          config.client_middleware do |chain|
+            chain.insert_after(middleware, Sidekiq::EncryptedArgs::ClientMiddleware)
+          end
+        end
+      end
+
+      # Insert the server decryption middleware before the specified middleware.
+      #
+      # @param [Class] middleware The middleware class to insert before
+      # @return [void]
+      def decrypt_before(middleware)
+        Sidekiq.configure_server do |config|
+          config.server_middleware do |chain|
+            chain.insert_before(middleware, Sidekiq::EncryptedArgs::ServerMiddleware)
+          end
+        end
+      end
+
+      # Insert the server decryption middleware after the specified middleware.
+      #
+      # @param [Class] middleware The middleware class to insert after
+      # @return [void]
+      def decrypt_after(middleware)
+        Sidekiq.configure_server do |config|
+          config.server_middleware do |chain|
+            chain.insert_after(middleware, Sidekiq::EncryptedArgs::ServerMiddleware)
+          end
+        end
+      end
+
       # Encrypt a value.
       #
       # @example Encrypting a simple value
