@@ -12,6 +12,7 @@ module Sidekiq
   # personally identifiable information.
   module EncryptedArgs
     @encryptors = nil
+    @mutex = Mutex.new
 
     # Error thrown when the secret is invalid
     class InvalidSecretError < StandardError
@@ -20,7 +21,8 @@ module Sidekiq
     class << self
       # Set the secret key used for encrypting arguments. If this is not set,
       # the value will be loaded from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment
-      # variable. If that value is not set, arguments will not be encrypted.
+      # variable. If that value is not set either, an InvalidSecretError will be
+      # raised when arguments are encrypted or decrypted.
       #
       # You can set multiple secrets by passing an array if you need to roll your secrets.
       # The left most value in the array will be used as the encryption secret, but
@@ -38,7 +40,9 @@ module Sidekiq
       # @param [String, Array<String>] value One or more secrets to use for encrypting arguments.
       # @return [void]
       def secret=(value)
-        @encryptors = make_encryptors(value).freeze
+        @mutex.synchronize do
+          @encryptors = make_encryptors(value).freeze
+        end
       end
 
       # Add the client and server middleware to the default Sidekiq
@@ -145,17 +149,12 @@ module Sidekiq
       #
       # @param [#to_json, Object] data Data to encrypt. You can pass any JSON compatible data types or structures.
       #
-      # @return [String]
+      # @return [String, nil]
       def encrypt(data)
         return nil if data.nil?
 
         json = (data.respond_to?(:to_json) ? data.to_json : JSON.generate(data))
-        encrypted = encrypt_string(json)
-        if encrypted == json
-          data
-        else
-          encrypted
-        end
+        encrypt_string(json)
       end
 
       # Decrypt data
@@ -203,15 +202,24 @@ module Sidekiq
           raise ArgumentError.new("Hash-based argument encryption is no longer supported.")
         else
           array_type = nil
-          Array(option).each_with_index do |val, position|
+          Array(option).each do |val|
             current_type = nil
             if val.is_a?(Integer)
               indexes << val
               current_type = :integer
             elsif val.is_a?(Symbol) || val.is_a?(String)
-              worker_class = constantize(worker_class) if worker_class.is_a?(String)
+              if worker_class.is_a?(String)
+                class_name = worker_class
+                worker_class = constantize(worker_class)
+                if worker_class.nil?
+                  raise ArgumentError.new("Cannot resolve worker class #{class_name.inspect} to look up named encrypted args; use integer positions instead.")
+                end
+              end
               position = perform_method_parameter_index(worker_class, val)
-              indexes << position if position
+              if position.nil?
+                raise ArgumentError.new("Encrypted arg #{val.inspect} is not a parameter of #{worker_class}#perform.")
+              end
+              indexes << position
               current_type = :symbol
             else
               raise ArgumentError.new("Encrypted args must be specified as integers or symbols.")
@@ -234,10 +242,7 @@ module Sidekiq
       private_constant :SALT
 
       def encrypt_string(value)
-        encryptor = encryptors.first
-        return value if encryptor.nil?
-
-        encryptor.encrypt(value)
+        encryptors.first.encrypt(value)
       end
 
       def decrypt_string(value)
@@ -252,15 +257,20 @@ module Sidekiq
       end
 
       def encryptors
-        if @encryptors.nil?
-          secret = ENV.fetch("SIDEKIQ_ENCRYPTED_ARGS_SECRET", "").strip
-          if secret.empty?
-            raise InvalidSecretError.new("Secret not set. Call Sidekiq::EncryptedArgs.secret= or set the SIDEKIQ_ENCRYPTED_ARGS_SECRET environment variable.")
-          end
+        current = @encryptors
+        return current unless current.nil?
 
-          @encryptors = make_encryptors(secret.split).freeze
+        @mutex.synchronize do
+          if @encryptors.nil?
+            secret = ENV.fetch("SIDEKIQ_ENCRYPTED_ARGS_SECRET", "").strip
+            if secret.empty?
+              raise InvalidSecretError.new("Secret not set. Call Sidekiq::EncryptedArgs.secret= or set the SIDEKIQ_ENCRYPTED_ARGS_SECRET environment variable.")
+            end
+
+            @encryptors = make_encryptors(secret.split).freeze
+          end
+          @encryptors
         end
-        @encryptors
       end
 
       # Create encryptors from secrets.
@@ -268,15 +278,16 @@ module Sidekiq
       # @param [String, Array<String>] secrets One or more secrets to create encryptors from
       # @return [Array<SecretKeys::Encryptor>, nil] Array of encryptors or nil if no secrets provided
       def make_encryptors(secrets)
-        return nil if secrets.nil?
+        secrets = Array(secrets).reject { |val| val.nil? || val.to_s.empty? }
+        return nil if secrets.empty?
 
-        Array(secrets).map { |val| SecretKeys::Encryptor.from_password(val, SALT) }
+        secrets.map { |val| SecretKeys::Encryptor.from_password(val, SALT) }
       end
 
       # Convert a string class name into the actual class constant.
       #
       # @param [String] class_name Name of a class (e.g., "MyModule::MyClass")
-      # @return [Class] The class constant that was referenced by name
+      # @return [Class, nil] The class constant that was referenced by name, or nil if it is not defined
       def constantize(class_name)
         names = class_name.split("::")
         # Clear leading :: for root namespace since we're already calling from object
@@ -284,6 +295,8 @@ module Sidekiq
         # Map reduce to the constant. Use inherit=false to not accidentally search
         # parent modules
         names.inject(Object) { |constant, name| constant.const_get(name, false) }
+      rescue NameError
+        nil
       end
 
       # Get the index of a parameter in the worker's perform method.
@@ -292,10 +305,17 @@ module Sidekiq
       # @param [String, Symbol] parameter The parameter name to find
       # @return [Integer, nil] The zero-based index of the parameter, or nil if not found
       def perform_method_parameter_index(worker_class, parameter)
-        if worker_class
-          parameter = parameter.to_sym
-          worker_class.instance_method(:perform).parameters.find_index { |_, name| name == parameter }
+        return nil unless worker_class
+
+        perform_method = begin
+          worker_class.instance_method(:perform)
+        rescue NameError
+          nil
         end
+        return nil if perform_method.nil?
+
+        parameter = parameter.to_sym
+        perform_method.parameters.find_index { |_, name| name == parameter }
       end
     end
   end

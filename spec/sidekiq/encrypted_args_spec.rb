@@ -65,6 +65,24 @@ RSpec.describe Sidekiq::EncryptedArgs do
     end
   end
 
+  it "should raise an error rather than silently disable encryption if the secret is set to an empty value" do
+    with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: nil) do
+      Sidekiq::EncryptedArgs.secret = []
+      expect { Sidekiq::EncryptedArgs.encrypt("foobar") }.to raise_error(Sidekiq::EncryptedArgs::InvalidSecretError)
+
+      Sidekiq::EncryptedArgs.secret = ""
+      expect { Sidekiq::EncryptedArgs.encrypt("foobar") }.to raise_error(Sidekiq::EncryptedArgs::InvalidSecretError)
+    end
+  end
+
+  it "should lazily initialize the encryptors from the environment in a thread safe manner" do
+    Sidekiq::EncryptedArgs.secret = nil
+    with_environment(SIDEKIQ_ENCRYPTED_ARGS_SECRET: "env_key") do
+      encryptors = Array.new(8) { Thread.new { Sidekiq::EncryptedArgs.send(:encryptors) } }.map(&:value)
+      expect(encryptors.map(&:object_id).uniq.size).to eq 1
+    end
+  end
+
   it "should not encrypt nil" do
     expect(Sidekiq::EncryptedArgs.encrypt(nil)).to eq nil
   end
