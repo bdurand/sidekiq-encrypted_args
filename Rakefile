@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "bundler/setup"
 rescue LoadError
@@ -13,7 +15,7 @@ task :verify_release_branch do
   end
 end
 
-Rake::Task[:release].enhance([:verify_release_branch])
+Rake::Task[:release].prerequisites.prepend("verify_release_branch")
 
 require "rspec/core/rake_task"
 
@@ -21,33 +23,27 @@ RSpec::Core::RakeTask.new(:spec)
 
 task default: [:spec]
 
-desc "Run the test application for manual testing"
-task :test_app do
-  exec "ruby test_app/run.rb"
-end
+namespace :appraisal do
+  desc "Update the appraisal gemfiles"
+  task :update do
+    Dir.glob("gemfiles/*.gemfile*") do |file|
+      File.delete(file) if File.file?(file)
+    end
 
-namespace :test_app do
-  desc "Stop the running test application"
-  task :stop do
-    # Find processes using port 9292 (the test app's web server)
-    pids = `lsof -ti :9292`.split("\n").map(&:strip).reject(&:empty?)
+    system "bundle exec appraisal generate" || abort("appraisal generate failed")
 
-    if pids.empty?
-      puts "No running test application found (port 9292 is not in use)"
-    else
-      pids.each do |pid|
-        puts "Killing process #{pid}..."
-        system("kill #{pid}")
+    Dir.glob("gemfiles/*.gemfile") do |file|
+      puts "Locking #{file}"
+      Bundler.with_unbundled_env do
+        system(
+          {
+            "BUNDLE_GEMFILE" => file
+          },
+          "bundle", "lock", "--update"
+        ) || abort("appraisal lock failed on #{file}")
       end
-      sleep 1
-      puts "Test application stopped"
     end
   end
-end
-
-desc "Open an interactive console with test workers loaded"
-task :console do
-  exec "ruby test_app/console.rb"
 end
 
 task :benchmark do

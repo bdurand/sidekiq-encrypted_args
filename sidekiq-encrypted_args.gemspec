@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   ignore_files = %w[
     .
+    benchmark.rb
     Appraisals
     Gemfile
     Gemfile.lock
@@ -38,6 +39,4 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "sidekiq", ">= 6.3"
   spec.add_dependency "secret_keys"
-
-  spec.add_development_dependency "bundler"
 end
