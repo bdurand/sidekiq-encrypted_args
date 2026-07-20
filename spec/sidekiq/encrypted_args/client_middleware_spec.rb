@@ -120,6 +120,29 @@ RSpec.describe Sidekiq::EncryptedArgs::ClientMiddleware do
     expect(job["args"].collect { |val| SecretKeys::Encryptor.encrypted?(val) }).to eq [false, true, false]
   end
 
+  it "should raise an error if a named encrypted arg is not a parameter of the perform method" do
+    job["encrypted_args"] = ["no_such_arg"]
+    expect {
+      middleware.call(SecretWorker, job, queue) {}
+    }.to raise_error(ArgumentError, /is not a parameter of SecretWorker#perform/)
+  end
+
+  it "should raise an error if named encrypted args are used with a worker class that is not defined" do
+    job["encrypted_args"] = ["arg_1"]
+    expect {
+      middleware.call("UndefinedWorker", job, queue) {}
+    }.to raise_error(ArgumentError, /Cannot resolve worker class "UndefinedWorker"/)
+  end
+
+  it "should not mutate the caller's args array when encrypting" do
+    original_args = job["args"]
+    job["encrypted_args"] = ArrayIndexSecretWorker.sidekiq_options["encrypted_args"]
+    middleware.call(ArrayIndexSecretWorker, job, queue) {}
+    expect(original_args).to eq ["foo", "bar", "baz"]
+    expect(job["args"]).to_not equal original_args
+    expect(SecretKeys::Encryptor.encrypted?(job["args"][1])).to eq true
+  end
+
   it "should not encrypt arguments that are already encrypted" do
     called = false
     job["encrypted_args"] = ArrayIndexSecretWorker.sidekiq_options["encrypted_args"]

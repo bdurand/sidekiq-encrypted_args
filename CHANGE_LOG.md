@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.2
+
+### Changed
+
+- An `ArgumentError` is now raised when a named encrypted argument cannot be matched to a parameter of the worker's `perform` method or when the worker class name cannot be resolved to a class. Previously these arguments were silently left unencrypted.
+
+### Fixed
+
+- Setting the secret to an empty value (e.g. an empty array or empty string) no longer silently disables encryption. An `InvalidSecretError` is now raised when encrypting or decrypting if no secret is available.
+- The client middleware no longer mutates the caller's arguments array in place when encrypting arguments.
+- Lazily initializing the encryption keys from the `SIDEKIQ_ENCRYPTED_ARGS_SECRET` environment variable is now thread safe.
+
 ## 2.0.1
 
 ### Added

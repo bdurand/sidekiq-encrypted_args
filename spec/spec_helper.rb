@@ -47,12 +47,12 @@ def with_empty_middleware
   sidekiq_config.client_middleware.clear
 
   yield
-
+ensure
   # Clear anything added and restore all previously registered middleware
   sidekiq_config.server_middleware.clear
   sidekiq_config.client_middleware.clear
-  server_middleware.each { |m| sidekiq_config.server_middleware.add(m) }
-  client_middleware.each { |m| sidekiq_config.client_middleware.add(m) }
+  server_middleware&.each { |m| sidekiq_config.server_middleware.add(m) }
+  client_middleware&.each { |m| sidekiq_config.client_middleware.add(m) }
 end
 
 def sidekiq_config

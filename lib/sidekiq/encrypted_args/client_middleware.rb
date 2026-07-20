@@ -35,15 +35,19 @@ module Sidekiq
       #
       # Additionally, set `job["encrypted_args"]` to the canonicalized version (i.e. `Array<Integer>`)
       #
+      # The args array is replaced rather than mutated in place since the array
+      # can be the same object passed in by the caller of Sidekiq::Client.push.
+      #
       # @param [Hash] job The Sidekiq job hash containing arguments and metadata
       # @param [Array<Integer>] encrypted_args array of indexes in job to encrypt
       # @return [void]
       def encrypt_job_arguments!(job, encrypted_args)
         if encrypted_args
-          job_args = job["args"]
-          job_args.each_with_index do |value, position|
+          job["args"] = job["args"].map.with_index do |value, position|
             if encrypted_args.include?(position) && !EncryptedArgs.encrypted?(value)
-              job_args[position] = EncryptedArgs.encrypt(value)
+              EncryptedArgs.encrypt(value)
+            else
+              value
             end
           end
           job["encrypted_args"] = encrypted_args
