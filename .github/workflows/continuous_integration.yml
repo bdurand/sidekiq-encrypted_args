@@ -10,12 +10,6 @@ on:
       - actions-*
   workflow_dispatch:
 
-env:
-  BUNDLE_CLEAN: "true"
-  BUNDLE_PATH: vendor/bundle
-  BUNDLE_JOBS: 3
-  BUNDLE_RETRY: 3
-
 jobs:
   build:
     runs-on: ubuntu-latest
